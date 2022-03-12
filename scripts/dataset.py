@@ -70,7 +70,8 @@ class MNIST_Moving(Dataset):
             seq = _transform_time(seq)
         # if self.target_transform is not None:
         #     target = _transform_time(target)
-        seq = torch.unsqueeze(seq, 1)
+        seq = torch.unsqueeze(seq, 1) 
+        # [N X 20 X 64 X 64]
         return seq
 
     def __len__(self):

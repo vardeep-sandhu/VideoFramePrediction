@@ -11,11 +11,11 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from dataset import MNIST_Moving
 
-
+device = "cuda"
 
 class ConvLSTMCell(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias,mode="zeros"):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, mode="zeros"):
         super(ConvLSTMCell, self).__init__()
 
         self.input_dim = input_dim
@@ -32,14 +32,11 @@ class ConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=self.bias)
         
-       
-        
-
     def forward(self, x, cur_state):
         h_cur, c_cur = cur_state
         x = x.to(device)
         h_cur = h_cur.to(device)
-
+        
         concat_input_hcur = torch.cat([x, h_cur], dim=1) 
         concat_input_hcur = concat_input_hcur.to(device)
 
@@ -47,7 +44,7 @@ class ConvLSTMCell(nn.Module):
         concat_input_hcur_conv = concat_input_hcur_conv.to(device)
 
         cc_input_gate, cc_forget_gate, cc_output_gate, cc_output = torch.split(concat_input_hcur_conv, self.hidden_dim, dim=1)
-
+        
         input_gate = torch.sigmoid(cc_input_gate +  c_cur)
 
         forget_gate = torch.sigmoid(cc_forget_gate +  c_cur)
@@ -78,8 +75,7 @@ class ConvLSTMCell(nn.Module):
         return h, c
 
         
-
-class ConvLSTM(nn.Module):  
+class ConvLSTM(nn.Module):
     """ 
     Custom LSTM for images. Batches of images are fed to a Conv LSTM
     
@@ -108,7 +104,7 @@ class ConvLSTM(nn.Module):
         self.batch_first = batch_first
         self.bias = bias
         self.return_all_layers = return_all_layers
-
+        
         conv_lstms  = []
         # iterating over no of layers
         for i in range(0, self.num_layers):
@@ -122,9 +118,8 @@ class ConvLSTM(nn.Module):
         self.conv_lstms = nn.ModuleList(conv_lstms)
 
     def forward(self, x, hidden_state=None):
-       
 
-        x=x.unsqueeze(dim=1)
+        x = x.unsqueeze(dim=1)
         b, _, _, h, w = x.size()
 
         if hidden_state is not None:
@@ -132,13 +127,11 @@ class ConvLSTM(nn.Module):
         else:
             hidden_state = self._init_hidden(batch_size=b,
                                              image_size=(h, w))
-
-        
+#         print(len(hidden_state))
         cur_layer_input = x
         output_list = []
         x_len = x.size(1)
         
-
         # iterating over no of layers
         for i in range(self.num_layers):
 
