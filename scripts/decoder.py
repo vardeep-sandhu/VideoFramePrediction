@@ -28,11 +28,8 @@ class Decoder(nn.Module):
     
     def forward(self, x):
         layers = []
-        # print("hello")
-        # print(x.shape)
         for block in self.dec_blocks:
             x = block(x)
-            # print(x.shape)
             layers.append(x)
 
         return x
