@@ -16,9 +16,12 @@ class DecBlock(nn.Module):
         super().__init__()
         self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, 3,stride=2,padding=(1, 1))
         self.conv2 = nn.ConvTranspose2d(out_ch, out_ch, 2,stride=1)
+        self.elu  = nn.ELU()
+        self.bn1    = nn.BatchNorm2d(out_ch)
+        
     
     def forward(self, x):
-        return self.conv2((self.conv1(x)))
+        return self.elu(self.bn1(self.conv2(self.elu(self.bn1(self.conv1(x))))))
 
 class Decoder(nn.Module):
     def __init__(self, chs):

@@ -14,11 +14,12 @@ class EncBlock(nn.Module):
     def __init__(self, in_ch, out_ch):
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch, out_ch, 3,stride=1,padding=(1, 1))
-        self.relu  = nn.ReLU()
+        self.elu  = nn.ELU()
+        self.bn1    = nn.BatchNorm2d(out_ch)
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3,stride=1,padding=(1, 1))
     
     def forward(self, x):
-        return self.conv2(self.relu(self.conv1(x)))
+        return self.elu(self.bn1(self.conv2(self.elu(self.bn1(self.conv1(x))))))
 
 class Encoder(nn.Module):
     def __init__(self, chs):
@@ -33,7 +34,6 @@ class Encoder(nn.Module):
         for block in self.enc_blocks:
             x = block(x)
             # print(x.shape)
-            
             x = self.pool(x)
             layers.append(x)
         return x
