@@ -37,10 +37,13 @@ class Model(nn.Module):
     def forward(self, x):
                 
         embds = self.embd_model(x)
-        
-        lstm_1, (h_1, c_1) = self.conv_model_FirstEncoder(embds[0])
-        lstm_2, (h_2, c_2) = self.conv_model_SecondEncoder(embds[1])
-        lstm_3, (h_3, c_3) = self.conv_model_ThirdEncoder(embds[2])
+        # print(embds[0].shape)
+
+        # This .unsqueeze(0) is done to include the bacth information as well in the model
+
+        lstm_1 = self.conv_model_FirstEncoder(embds[0].unsqueeze(0))
+        lstm_2 = self.conv_model_SecondEncoder(embds[1].unsqueeze(0))
+        lstm_3 = self.conv_model_ThirdEncoder(embds[2].unsqueeze(0))
 
         
         out_1 = self.decoder.firstDecoder(lstm_3.squeeze())

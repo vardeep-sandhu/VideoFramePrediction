@@ -119,15 +119,13 @@ class ConvLSTM(nn.Module):
 
     def forward(self, x, hidden_state=None):
 
-        x = x.unsqueeze(dim=1)
-        b, _, _, h, w = x.size()
+        b, _, c, h, w = x.size()
 
         if hidden_state is not None:
             raise NotImplementedError()
         else:
             hidden_state = self._init_hidden(batch_size=b,
                                              image_size=(h, w))
-#         print(len(hidden_state))
         cur_layer_input = x
         output_list = []
         x_len = x.size(1)
@@ -140,20 +138,26 @@ class ConvLSTM(nn.Module):
             # iterating over sequence length
 
             for t in range(x_len):
-                h, c = self.conv_lstms[i](x=cur_layer_input[:, t, :, :, :],cur_state=[h, c])
+                if t < 10:
+                    h, c = self.conv_lstms[i](x=cur_layer_input[:, t, :, :, :],cur_state=[h, c])
+                
+                elif t >= 10:
+                    h_prev = each_layer_output[-1]
+                    h, c = self.conv_lstms[i](x = h_prev, cur_state=[h, c])
+                
                 each_layer_output.append(h)
 
             stacked_layer_output = torch.stack(each_layer_output, dim=1)
-            cur_layer_input = stacked_layer_output
+            
 
-            output_list.append(stacked_layer_output)
+        #     output_list.append(stacked_layer_output)
 
-        if not self.return_all_layers:
-            output_list = output_list[-1:]
+        # if not self.return_all_layers:
+        #     output_list = output_list[-1:]
 
-        batch_shape = output_list[-1].shape[0]
+        # batch_shape = output_list[-1].shape[0]
 
-        return torch.stack(each_layer_output), (h, c)
+        return stacked_layer_output
 
     def _init_hidden(self, batch_size, image_size):
         init_states = []
