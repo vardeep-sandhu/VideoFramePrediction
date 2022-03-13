@@ -35,22 +35,19 @@ class Model(nn.Module):
 
 
     def forward(self, x):
-                
         embds = self.embd_model(x)
-        # print(embds[0].shape)
+        batch_size, seq_len = x.shape[0:2]
 
-        # This .unsqueeze(0) is done to include the bacth information as well in the model
-
-        lstm_1 = self.conv_model_FirstEncoder(embds[0].unsqueeze(0))
-        lstm_2 = self.conv_model_SecondEncoder(embds[1].unsqueeze(0))
-        lstm_3 = self.conv_model_ThirdEncoder(embds[2].unsqueeze(0))
-
+        lstm_1 = self.conv_model_FirstEncoder(embds[0])
+        lstm_2 = self.conv_model_SecondEncoder(embds[1])
+        lstm_3 = self.conv_model_ThirdEncoder(embds[2])
         
-        out_1 = self.decoder.firstDecoder(lstm_3.squeeze())
-        in_2 = torch.cat((out_1, lstm_2.squeeze()), 1)
+        out_1 = self.decoder.firstDecoder(lstm_3.view(-1, *lstm_3.shape[2:]))
+        in_2 = torch.cat((out_1, lstm_2.view(-1, *lstm_2.shape[2:])), 1)
 
         out_2 = self.decoder.secondDecoder(in_2)
-        in_3 = torch.cat((out_2, lstm_1.squeeze()), 1)
+        in_3 = torch.cat((out_2, lstm_1.view(-1, *lstm_1.shape[2:])), 1)
 
         out_3 = self.decoder.thirdDecoder(in_3)
-        return out_3
+        
+        return out_3.reshape(batch_size, seq_len, *out_3.shape[1:])

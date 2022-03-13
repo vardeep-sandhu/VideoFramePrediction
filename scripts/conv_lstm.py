@@ -149,14 +149,6 @@ class ConvLSTM(nn.Module):
 
             stacked_layer_output = torch.stack(each_layer_output, dim=1)
             
-
-        #     output_list.append(stacked_layer_output)
-
-        # if not self.return_all_layers:
-        #     output_list = output_list[-1:]
-
-        # batch_shape = output_list[-1].shape[0]
-
         return stacked_layer_output
 
     def _init_hidden(self, batch_size, image_size):

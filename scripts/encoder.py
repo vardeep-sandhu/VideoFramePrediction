@@ -29,11 +29,9 @@ class Encoder(nn.Module):
     
     def forward(self, x):
         layers = []
-        # print("Layer shape")
-        # print(x.shape)
+
         for block in self.enc_blocks:
             x = block(x)
-            # print(x.shape)
             x = self.pool(x)
             layers.append(x)
         return x
@@ -51,7 +49,11 @@ class Embedded_Encoder(nn.Module):
         self.thirdEncoder.to(device)
 
     def forward(self, x):
-      #list to store the outputs from each encoders
+        # Embedder makes embeddings for all the frames in all batch sequences
+        input_shape = x.shape
+        
+        x = x.reshape(-1, *input_shape[2:])
+        #list to store the outputs from each encoders
         encoder_outputs = []
         x=self.firstEncoder(x)
         encoder_outputs.append(x)
@@ -60,4 +62,9 @@ class Embedded_Encoder(nn.Module):
         x=self.thirdEncoder(x)
         encoder_outputs.append(x)
 
+
+        for idx, emds in enumerate(encoder_outputs):
+            emds_dims = emds.shape[1:]
+            encoder_outputs[idx] = emds.reshape(input_shape[0], 20, *emds_dims)
+            
         return encoder_outputs

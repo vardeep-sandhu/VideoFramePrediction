@@ -31,6 +31,7 @@ class Decoder(nn.Module):
     
     def forward(self, x):
         layers = []
+        
         for block in self.dec_blocks:
             x = block(x)
             layers.append(x)
@@ -50,7 +51,8 @@ class Embedded_Decoder(nn.Module):
         self.thirdDecoder.to(device)
 
     def forward(self, x):
-      #list to store the outputs from each decoders
+#       List to store the outputs from each decoders
+        
         decoder_outputs = []
         x=self.firstDecoder(x)
         decoder_outputs.append(x)
@@ -59,4 +61,9 @@ class Embedded_Decoder(nn.Module):
         x=self.thirdDecoder(x)
         decoder_outputs.append(x)
         
+
+        # for idx, emds in enumerate(decoder_outputs):
+        #     emds_dims = emds.shape[1:]
+        #     decoder_outputs[idx] = emds.reshape(batch_size, 20, *emds_dims)
+          
         return decoder_outputs
