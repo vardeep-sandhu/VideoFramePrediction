@@ -65,6 +65,6 @@ class Embedded_Encoder(nn.Module):
 
         for idx, emds in enumerate(encoder_outputs):
             emds_dims = emds.shape[1:]
-            encoder_outputs[idx] = emds.reshape(input_shape[0], 20, *emds_dims)
+            encoder_outputs[idx] = emds.reshape(input_shape[0], 10, *emds_dims)
             
         return encoder_outputs

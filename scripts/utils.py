@@ -8,20 +8,20 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     
     loss_list = []
     progress_bar = tqdm(enumerate(train_loader), total=len(train_loader))
-    for i, full_seq in progress_bar:
+    for i, (seq, target) in progress_bar:
 
-        full_seq = full_seq.type(torch.FloatTensor).to(device)
-        
+        seq = seq.type(torch.FloatTensor).to(device)
+        target = target.type(torch.FloatTensor).to(device)
         
         # Clear gradients w.r.t. parameters
         optimizer.zero_grad()
         
-        outputs = model(full_seq)
-        outputs = outputs.to(device)
-         
-        loss = criterion(outputs, full_seq)
+        predictions = model(seq)
+        predictions = predictions.to(device)
+
+        loss = criterion(predictions , target)
         loss_list.append(loss.item())
-        
+
         # Getting gradients w.r.t. parameters
         loss.backward()
          
@@ -29,8 +29,9 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {i+1}: loss {loss.item():.5f}. ")
-        
+
     mean_loss = np.mean(loss_list)
+
     return mean_loss, loss_list
 
 
@@ -39,20 +40,18 @@ def eval_model(model, eval_loader, criterion, device):
     """ Evaluating the model for either validation or test """
     loss_list = []
     pbar = tqdm(enumerate(eval_loader), total=len(eval_loader))
-    for idx, full_seq in pbar:
-
-        full_seq = full_seq.type(torch.FloatTensor).to(device)
-        target_seq = full_seq[:, 10:, :, :, :]
+    for idx, (seq, target) in pbar:
+        
+        seq = seq.type(torch.FloatTensor).to(device)
+        target = target.type(torch.FloatTensor).to(device)
+        
         
         
         # Forward pass only to get logits/output
-        outputs = model(full_seq)
-        outputs = outputs.to(device)
-        
-        preds = outputs[:, 10:, :, :, :]
-        
-        loss = criterion(preds, target_seq)
-
+        predictions = model(seq)
+        predictions = predictions.to(device)
+                
+        loss = criterion(predictions, target)
         loss_list.append(loss.item())
             
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")

@@ -13,13 +13,18 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # print(device)
 
+    #transforms are here!
+    
+    transform = transforms.Compose([transforms.ToTensor(),
+                        transforms.Resize((64, 64)),
+                        transforms.Normalize((0.5, ), (0.5, ))
+                       ])
     # [TODO]
-    # Add transforms here!
     # And visualize the input images using the vis function
 
-    train_set = MNIST_Moving(root='.data/mnist', train=True, download=True)
-    test_set = MNIST_Moving(root='.data/mnist', train=False, download=True)
-
+    train_set = MNIST_Moving(root='.data/mnist', train=True, download=True, transform=transform, target_transform=transform)
+    test_set = MNIST_Moving(root='.data/mnist', train=False, download=True, transform=transform, target_transform=transform)
+    
     batch_size = 64
 
     train_loader = torch.utils.data.DataLoader(
@@ -34,10 +39,15 @@ if __name__ == "__main__":
     print("Data loaders ready")
 
     model = Model()
+    
+    
     print("Model Loaded")
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.1)
 
+    # mean_loss, loss_list = utils.train_epoch(model, train_loader, optimizer, criterion, 0, device)
+    # breakpoint()
+    
     train_loss, test_loss, loss_iter, epochs = utils.train_model(model, optimizer, scheduler, criterion,\
                                                                 train_loader, test_loader, 100, device)

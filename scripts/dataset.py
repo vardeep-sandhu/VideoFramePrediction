@@ -57,22 +57,22 @@ class MNIST_Moving(Dataset):
                 new_data = self.transform(img) if new_data is None else torch.cat([self.transform(img), new_data], dim=0)
             return new_data
 
-        # if self.train:
-        #     seq, target = self.train_data[index, :10], self.train_data[index, 10:]
-        # else:
-        #     seq, target = self.test_data[index, :10], self.test_data[index, 10:]
         if self.train:
-            seq = self.train_data[index, :]
+            seq, target = self.train_data[index, :10], self.train_data[index, 10:]
         else:
-            seq = self.test_data[index, :]
+            seq, target = self.test_data[index, :10], self.test_data[index, 10:]
 
         if self.transform is not None:
             seq = _transform_time(seq)
-        # if self.target_transform is not None:
-        #     target = _transform_time(target)
-        seq = torch.unsqueeze(seq, 1) 
-        # [N X 20 X 64 X 64]
-        return seq
+
+        if self.target_transform is not None:
+            target = _transform_time(target)
+
+        seq = torch.unsqueeze(seq, 1)
+        target = torch.unsqueeze(target, 1)
+        
+        # [10 X 1 X 64 X 64], [10 X 1 X 64 X 64] 
+        return seq, target
 
     def __len__(self):
         if self.train:
