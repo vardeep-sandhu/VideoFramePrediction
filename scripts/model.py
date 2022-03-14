@@ -4,7 +4,6 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from tqdm import tqdm
-from dataset import MNIST_Moving
 from encoder import Embedded_Encoder
 from decoder import Embedded_Decoder
 from conv_lstm import ConvLSTM

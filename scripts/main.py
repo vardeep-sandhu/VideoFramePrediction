@@ -11,7 +11,12 @@ import utils
 if __name__ == "__main__":
     # Adding dataloader
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
+    # print(device)
+
+    # [TODO]
+    # Add transforms here!
+    # And visualize the input images using the vis function
+
     train_set = MNIST_Moving(root='.data/mnist', train=True, download=True)
     test_set = MNIST_Moving(root='.data/mnist', train=False, download=True)
 
@@ -20,8 +25,8 @@ if __name__ == "__main__":
     train_loader = torch.utils.data.DataLoader(
                     dataset=train_set,
                     batch_size=batch_size,
-                    
-                    shuffle=True)
+                    shuffle=False)
+
     test_loader = torch.utils.data.DataLoader(
                     dataset=test_set,
                     batch_size=batch_size,
