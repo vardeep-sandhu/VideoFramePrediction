@@ -38,7 +38,7 @@ class Model(nn.Module):
         embds = self.embd_model(x)
         batch_size, seq_len = x.shape[0:2]
 
-        lstm_1 = self.conv_model_FirstEncoder(embds[0])
+        lstm_1 = self.conv_model_FirstEncoder(embds[0]) #[Batch_size, t, 64, 8, 8]
         lstm_2 = self.conv_model_SecondEncoder(embds[1])
         lstm_3 = self.conv_model_ThirdEncoder(embds[2])
         
