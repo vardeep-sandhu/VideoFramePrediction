@@ -11,7 +11,6 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     for i, full_seq in progress_bar:
 
         full_seq = full_seq.type(torch.FloatTensor).to(device)
-        target_seq = full_seq[:, 10:, :, :, :]
         
         
         # Clear gradients w.r.t. parameters
@@ -22,7 +21,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         outputs = outputs.to(device)
          
         # Calculate Loss: softmax --> cross entropy loss
-        loss = criterion(outputs[:, 10:, :, :, :], target_seq)
+        loss = criterion(outputs, full_seq)
         loss_list.append(loss.item())
         
         # Getting gradients w.r.t. parameters
