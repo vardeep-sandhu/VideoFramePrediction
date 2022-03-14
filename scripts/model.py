@@ -45,9 +45,13 @@ class Model(nn.Module):
         out_1 = self.decoder.firstDecoder(lstm_3.view(-1, *lstm_3.shape[2:]))
         in_2 = torch.cat((out_1, lstm_2.view(-1, *lstm_2.shape[2:])), 1)
 
+        in_2 = self.decoder.chnge_dims_256_128(in_2)
+
         out_2 = self.decoder.secondDecoder(in_2)
         in_3 = torch.cat((out_2, lstm_1.view(-1, *lstm_1.shape[2:])), 1)
 
+        in_3 = self.decoder.chnge_dims_128_64(in_3)
         out_3 = self.decoder.thirdDecoder(in_3)
         
-        return out_3.reshape(batch_size, seq_len, *out_3.shape[1:])
+        output = out_3.reshape(batch_size, seq_len, *out_3.shape[1:])
+        return self.decoder.sigmoid_layer(output)

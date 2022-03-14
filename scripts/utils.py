@@ -16,11 +16,9 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         # Clear gradients w.r.t. parameters
         optimizer.zero_grad()
         
-        # Forward pass only to get logits/output
         outputs = model(full_seq)
         outputs = outputs.to(device)
          
-        # Calculate Loss: softmax --> cross entropy loss
         loss = criterion(outputs, full_seq)
         loss_list.append(loss.item())
         

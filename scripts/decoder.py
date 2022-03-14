@@ -38,6 +38,16 @@ class Decoder(nn.Module):
 
         return x
 
+class DecoderDimensionMatch(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.relu(self.conv1(x))
+        return x
+
 class Embedded_Decoder(nn.Module):
 
     def __init__(self, device):
@@ -45,10 +55,21 @@ class Embedded_Decoder(nn.Module):
         #The decoder is in reverse here 
         self.firstDecoder= Decoder((256,128))
         self.firstDecoder.to(device)
-        self.secondDecoder= Decoder((256,64))
+
+        # Add DecoderDimensionMatch block
+        self.chnge_dims_256_128 = DecoderDimensionMatch(256, 128)
+        self.chnge_dims_256_128.to(device)
+
+        self.secondDecoder= Decoder((128,64))
         self.secondDecoder.to(device)
-        self.thirdDecoder= Decoder((128,16,1))
+
+        # Add DecoderDimensionMatch block
+        self.chnge_dims_128_64 = DecoderDimensionMatch(128, 64)
+        self.chnge_dims_128_64.to(device)
+
+        self.thirdDecoder= Decoder((64,16,1))
         self.thirdDecoder.to(device)
+        self.sigmoid_layer = nn.Sigmoid()
 
     def forward(self, x):
 #       List to store the outputs from each decoders
@@ -60,10 +81,5 @@ class Embedded_Decoder(nn.Module):
         decoder_outputs.append(x)
         x=self.thirdDecoder(x)
         decoder_outputs.append(x)
-        
 
-        # for idx, emds in enumerate(decoder_outputs):
-        #     emds_dims = emds.shape[1:]
-        #     decoder_outputs[idx] = emds.reshape(batch_size, 20, *emds_dims)
-          
-        return decoder_outputs
+        return self.sigmoid_layer(decoder_outputs)
