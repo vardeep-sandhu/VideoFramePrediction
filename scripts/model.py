@@ -16,7 +16,7 @@ class Model(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.embd_model = Embedded_Encoder(device)
+        self.embd_model = Embedded_Encoder()
 
         self.conv_model_FirstEncoder = ConvLSTM(input_dim= 64, hidden_dim = 64, kernel_size = (5,5), num_layers= 2)
         if torch.cuda.is_available():
