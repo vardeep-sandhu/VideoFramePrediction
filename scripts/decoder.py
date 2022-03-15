@@ -16,13 +16,16 @@ class DecBlock(nn.Module):
         super().__init__()
         self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, 3,stride=2,padding=(1, 1))
         self.conv2 = nn.ConvTranspose2d(out_ch, out_ch, 2,stride=1)
-        self.elu  = nn.ELU()
+        self.relu  = nn.ReLU()
         self.bn1    = nn.BatchNorm2d(out_ch)
-        
+        self.conv3 = nn.Conv2d(out_ch+in_ch, out_ch, 1)
     
     def forward(self, x):
-        return self.elu(self.bn1(self.conv2(self.elu(self.bn1(self.conv1(x))))))
-
+        residual = x
+        residual = nn.functional.interpolate(residual,scale_factor=2)
+        out = self.bn1(self.conv2(self.relu(self.bn1(self.conv1(x)))))
+        out =self.relu(torch.cat((out,residual),1))
+        return self.relu(self.bn1(self.conv3(out)))
 class Decoder(nn.Module):
     def __init__(self, chs):
         super().__init__()
@@ -34,6 +37,7 @@ class Decoder(nn.Module):
         
         for block in self.dec_blocks:
             x = block(x)
+            print("x shape",x.shape)
             layers.append(x)
 
         return x

@@ -1,92 +1,55 @@
 import torch
 import torch.nn as nn
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
+import torchvision
 
-# This model is inspired by ResNet 
-def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
-    """3x3 convolution with padding"""
-    return nn.Conv2d(
-        in_planes,
-        out_planes,
-        kernel_size=3,
-        stride=stride,
-        padding=dilation,
-        groups=groups,
-        bias=False,
-        dilation=dilation,
-    )
-
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
-    """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
-
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+import numpy as np
+import torch.nn.functional as F
+from tqdm import tqdm
 
 class EncBlock(nn.Module):
     def __init__(self, in_ch, out_ch):
         super().__init__()
-        self.conv1 = conv3x3(in_planes=in_ch, out_planes=in_ch)
-        self.bn1    = nn.BatchNorm2d(in_ch)
-        self.relu  = nn.ReLU(inplace=True)
-
-        self.conv2 = conv3x3(in_planes=in_ch, out_planes=in_ch)
-        self.bn2    = nn.BatchNorm2d(in_ch)
-
-        # This 1 X 1 layer downsamples and inc channel as required
-        self.conv3 = conv1x1(in_planes=in_ch, out_planes=out_ch, stride=2)
-        self.bn3 = nn.BatchNorm2d(out_ch)
-
+        self.conv1 = nn.Conv2d(in_ch, out_ch, 3,stride=1,padding=(1, 1))
+        self.relu  = nn.ReLU()
+        self.bn1    = nn.BatchNorm2d(out_ch)
+        self.conv2 = nn.Conv2d(out_ch, out_ch, 3,stride=1,padding=(1, 1))
+        self.conv3 = nn.Conv2d(out_ch+in_ch, out_ch, 1)
+    
     def forward(self, x):
-        identity = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        out += identity
-        out = self.relu(out)
-        
-        # Till now channel and spatial dims of out and identity are same 
-        # Now we inc channel length
-        out = self.conv3(out)
-        out = self.bn3(out)
-        return out
-
+        residual = x
+        out = self.bn1(self.conv2(self.relu(self.bn1(self.conv1(x)))))
+        out =self.relu(torch.cat((out,residual),1))
+        return self.relu(self.bn1(self.conv3(out)))
 class Encoder(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, chs):
         super().__init__()
-        # First conv to inc channels from 1 to 16
-        self.conv1 = conv3x3(in_planes=1, out_planes=16)
-        self.enc_blocks = nn.ModuleList([EncBlock(channels[i], channels[i+1]) for i in range(len(channels)-1)])
-
-        
+        self.enc_blocks = nn.ModuleList([EncBlock(chs[i], chs[i+1]) for i in range(len(chs)-1)])
+        self.pool       = nn.MaxPool2d(2)
+    
     def forward(self, x):
-        # Input = [N, 1, 64, 64]
+        layers = []
 
-        if x.shape[1] == 1:
-            x = self.conv1(x)
-        # Output = [N, 16, 64, 64]
         for block in self.enc_blocks:
-            # For first itr
-            # Input = [N, 16, 64, 64]
             x = block(x)
-
-            # print("Output")
-            # print(x.shape)
-            # Output = [N, 32, 32, 32]
+            x = self.pool(x)
+            layers.append(x)
         return x
 
 
 class Embedded_Encoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
-        self.firstEncoder= Encoder((16, 32, 64))
-
-        self.secondEncoder= Encoder((64 , 128))
-
-        self.thirdEncoder= Encoder((128 , 256))
+        self.firstEncoder= Encoder((1,16,64))
+        # self.firstEncoder.to(device)
+        self.secondEncoder= Encoder((64,128))
+        # self.secondEncoder.to(device)
+        self.thirdEncoder= Encoder((128,256))
+        # self.thirdEncoder.to(device)
 
     def forward(self, x):
         # Embedder makes embeddings for all the frames in all batch sequences
@@ -95,18 +58,13 @@ class Embedded_Encoder(nn.Module):
         x = x.reshape(-1, *input_shape[2:])
         #list to store the outputs from each encoders
         encoder_outputs = []
-        # print("first encoder not done")
-
         x=self.firstEncoder(x)
-        
-        # print("first encoder done ")
         encoder_outputs.append(x)
         x=self.secondEncoder(x)
-
         encoder_outputs.append(x)
         x=self.thirdEncoder(x)
-
         encoder_outputs.append(x)
+
 
         for idx, emds in enumerate(encoder_outputs):
             emds_dims = emds.shape[1:]
