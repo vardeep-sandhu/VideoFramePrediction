@@ -5,8 +5,6 @@ import utils
 from model import Model
 from dataset import MNIST_Moving
 
-from torchvision.utils import make_grid
-import matplotlib.pyplot as plt
 
 def show(grid, name):
     fix, axs = plt.subplots()
