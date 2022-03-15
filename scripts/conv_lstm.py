@@ -119,7 +119,7 @@ class ConvLSTM(nn.Module):
 
     def forward(self, x, hidden_state=None):
 
-        b, _, c, h, w = x.size()
+        b, frames, c, h, w = x.size()
 
         if hidden_state is not None:
             raise NotImplementedError()
@@ -127,8 +127,7 @@ class ConvLSTM(nn.Module):
             hidden_state = self._init_hidden(batch_size=b,
                                              image_size=(h, w))
         cur_layer_input = x
-        output_list = []
-        x_len = x.size(1)
+
         
         # iterating over no of layers
         for i in range(self.num_layers):
@@ -137,7 +136,7 @@ class ConvLSTM(nn.Module):
             each_layer_output = []
             # iterating over sequence length
 
-            for t in range(x_len):
+            for t in range(frames*2):
                 if t < 10:
                     h, c = self.conv_lstms[i](x=cur_layer_input[:, t, :, :, :],cur_state=[h, c])
                 
@@ -148,7 +147,6 @@ class ConvLSTM(nn.Module):
                 each_layer_output.append(h)
 
             stacked_layer_output = torch.stack(each_layer_output, dim=1)
-            
         return stacked_layer_output
 
     def _init_hidden(self, batch_size, image_size):

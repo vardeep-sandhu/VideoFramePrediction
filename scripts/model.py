@@ -35,6 +35,7 @@ class Model(nn.Module):
 
     def forward(self, x):
         embds = self.embd_model(x)
+
         batch_size, seq_len = x.shape[0:2]
 
         lstm_1 = self.conv_model_FirstEncoder(embds[0]) #[Batch_size, t, 64, 8, 8]
@@ -52,5 +53,5 @@ class Model(nn.Module):
         in_3 = self.decoder.chnge_dims_128_64(in_3)
         out_3 = self.decoder.thirdDecoder(in_3)
         
-        output = out_3.reshape(batch_size, seq_len, *out_3.shape[1:])
+        output = out_3.reshape(batch_size, seq_len*2, *out_3.shape[1:])
         return self.decoder.sigmoid_layer(output)

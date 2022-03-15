@@ -38,7 +38,7 @@ if __name__ == "__main__":
     print("Data loaders ready")
 
     model = Model()
-    
+    mdoel = model.to(device)
     
     print("Model Loaded")
     criterion = nn.MSELoss()
