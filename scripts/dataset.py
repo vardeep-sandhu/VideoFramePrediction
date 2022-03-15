@@ -54,7 +54,7 @@ class MNIST_Moving(Dataset):
             new_data = None
             for i in range(data.size(0)):
                 img = Image.fromarray(data[i].numpy(), mode='L')
-                new_data = self.transform(img) if new_data is None else torch.cat([self.transform(img), new_data], dim=0)
+                new_data = self.transform(img) if new_data is None else torch.cat([new_data, self.transform(img)], dim=0)
             return new_data
 
         if self.train:
