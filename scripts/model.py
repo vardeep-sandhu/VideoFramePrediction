@@ -18,19 +18,13 @@ class Model(nn.Module):
 
         self.embd_model = Embedded_Encoder()
 
-        self.conv_model_FirstEncoder = ConvLSTM(input_dim= 64, hidden_dim = 64, kernel_size = (5,5), num_layers= 2)
-        if torch.cuda.is_available():
-            self.conv_model_FirstEncoder.to(device)
+        self.conv_lstm_1 = ConvLSTM(input_dim= 64, hidden_dim = 64, kernel_size = (3, 3), num_layers= 4)
 
-        self.conv_model_SecondEncoder= ConvLSTM(input_dim= 128, hidden_dim = 128, kernel_size = (5,5), num_layers= 2)
-        if torch.cuda.is_available():
-            self.conv_model_SecondEncoder.to(device)
+        self.conv_lstm_2 = ConvLSTM(input_dim= 128, hidden_dim = 128, kernel_size = (3, 3), num_layers= 4)
 
-        self.conv_model_ThirdEncoder= ConvLSTM(input_dim= 256, hidden_dim = 256, kernel_size = (5,5), num_layers= 2)
-        if torch.cuda.is_available():
-            self.conv_model_ThirdEncoder.to(device)
+        self.conv_lstm_3 = ConvLSTM(input_dim= 256, hidden_dim = 256, kernel_size = (3, 3), num_layers= 4)
 
-        self.decoder = Embedded_Decoder(device)
+        self.decoder = Embedded_Decoder()
 
 
     def forward(self, x):
@@ -38,20 +32,11 @@ class Model(nn.Module):
 
         batch_size, seq_len = x.shape[0:2]
 
-        lstm_1 = self.conv_model_FirstEncoder(embds[0]) #[Batch_size, t, 64, 8, 8]
-        lstm_2 = self.conv_model_SecondEncoder(embds[1])
-        lstm_3 = self.conv_model_ThirdEncoder(embds[2])
+        lstm_1 = self.conv_lstm_1(embds[0]) #[Batch_size, t, 64, 16, 16]
+        lstm_2 = self.conv_lstm_2(embds[1]) #[Batch_size, t, 128, 8, 8]
+        lstm_3 = self.conv_lstm_3(embds[2]) #[Batch_size, t, 256, 4, 4]
         
-        out_1 = self.decoder.firstDecoder(lstm_3.view(-1, *lstm_3.shape[2:]))
-        in_2 = torch.cat((out_1, lstm_2.view(-1, *lstm_2.shape[2:])), 1)
+        lstm_outputs = [lstm_3, lstm_2, lstm_1]
 
-        in_2 = self.decoder.chnge_dims_256_128(in_2)
-
-        out_2 = self.decoder.secondDecoder(in_2)
-        in_3 = torch.cat((out_2, lstm_1.view(-1, *lstm_1.shape[2:])), 1)
-
-        in_3 = self.decoder.chnge_dims_128_64(in_3)
-        out_3 = self.decoder.thirdDecoder(in_3)
-        
-        output = out_3.reshape(batch_size, seq_len*2, *out_3.shape[1:])
-        return self.decoder.sigmoid_layer(output)
+        out = self.decoder(lstm_outputs, batch_size, seq_len)
+        return out
