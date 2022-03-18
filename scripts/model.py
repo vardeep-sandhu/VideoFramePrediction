@@ -18,11 +18,11 @@ class Model(nn.Module):
 
         self.embd_model = Embedded_Encoder()
 
-        self.conv_lstm_1 = ConvLSTM(input_dim= 64, hidden_dim = 64, kernel_size = (3, 3), num_layers= 4)
+        self.conv_lstm_1 = ConvLSTM(input_dim= 64, hidden_dim = 64, kernel_size = (3, 3), num_layers= 2)
 
-        self.conv_lstm_2 = ConvLSTM(input_dim= 128, hidden_dim = 128, kernel_size = (3, 3), num_layers= 4)
+        self.conv_lstm_2 = ConvLSTM(input_dim= 128, hidden_dim = 128, kernel_size = (3, 3), num_layers= 2)
 
-        self.conv_lstm_3 = ConvLSTM(input_dim= 256, hidden_dim = 256, kernel_size = (3, 3), num_layers= 4)
+        self.conv_lstm_3 = ConvLSTM(input_dim= 256, hidden_dim = 256, kernel_size = (3, 3), num_layers= 2)
 
         self.decoder = Embedded_Decoder()
 

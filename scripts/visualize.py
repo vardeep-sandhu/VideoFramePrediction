@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import utils 
 from model import Model
 from dataset import MNIST_Moving
-
+import sys 
+import torchvision.transforms as transforms
 
 def show(grid, name):
     fix, axs = plt.subplots()
@@ -12,41 +13,49 @@ def show(grid, name):
 
     axs.imshow(grid.cpu().numpy().transpose(1,2,0))
     axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
-#     fix.savefig(f"{name}.pdf", format="pdf", bbox_inches="tight")
+    fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
 #     fix.show()
 
-def visualize_results(model, device):
-    test_input, test_target = next(iter(train_loader))
+def visualize_results(model, test_loader, device):
+    test_input, test_target = next(iter(test_loader))
     
     test_input = test_input.to(device)
     test_target = test_target.to(device)
     
+    full_gt_seq = torch.cat((test_input, test_target), dim=1)
+
     model.eval() 
+    with torch.no_grad():
+        predictions = model(test_input)
+        predictions = predictions.to(device)
     
-    predictions = model(test_input)
-    predictions = predictions.to(device)
-    print(predictions.shape)
-    grid_gt = make_grid(test_target[0])
+    grid_gt = make_grid(full_gt_seq[0])
     show(grid_gt, "gt")
 
     grid_out = make_grid(predictions[0])
+    
     show(grid_out, "output")
 #     grid_out = make_grid(predictions[0])
-    
+
+
+
 if __name__ == "__main__":
     # Get test_loader
-    
+    if len(sys.argv) != 2:
+        print("Please add model name")
+        sys.exit()
+
+    model_path = sys.argv[-1]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    train_set = MNIST_Moving(root='.data/mnist', train=True, download=True)
-    test_set = MNIST_Moving(root='.data/mnist', train=False, download=True)
+
+    transform = transforms.Compose([transforms.ToTensor(),
+                transforms.Resize((64, 64)),
+                ])
+
+    test_set = MNIST_Moving(root='.data/mnist', train=True, download=True, transform=transform, target_transform=transform)
 
     batch_size = 1
 
-    train_loader = torch.utils.data.DataLoader(
-                    dataset=train_set,
-                    batch_size=batch_size,
-                    shuffle=False)
     test_loader = torch.utils.data.DataLoader(
                 dataset=test_set,
                 batch_size=batch_size,
@@ -55,7 +64,7 @@ if __name__ == "__main__":
     model = Model()
     
     # Load model
-    model, _, _  = utils.loading_model(model, "models/model_7.pth")
-
+    model, _, _  = utils.loading_model(model, model_path)
+    model = model.to(device)
     # Visualize
     visualize_results(model, test_loader, device)

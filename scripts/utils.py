@@ -21,7 +21,8 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
 
         full_seq = torch.cat((seq, target), dim=1)
 
-        loss = criterion(predictions , full_seq)
+        loss = criterion(predictions[:, :-1, :, :, :], full_seq[:, 1:, :, :, :])
+        
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
@@ -50,7 +51,7 @@ def eval_model(model, eval_loader, criterion, device):
         predictions = model(seq)
         predictions = predictions.to(device)
                 
-        loss = criterion(predictions[:, 10:, :, :, :], target)
+        loss = criterion(predictions[:, 9:-1, :, :, :], target)
         loss_list.append(loss.item())
             
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
