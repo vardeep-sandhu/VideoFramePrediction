@@ -51,6 +51,7 @@ class EncBlock(nn.Module):
         # Now we inc channel length
         out = self.conv3(out)
         out = self.bn3(out)
+        # out = self.relu(out)
         return out
 
 class Encoder(nn.Module):
@@ -92,6 +93,7 @@ class Embedded_Encoder(nn.Module):
     def forward(self, x):
         # Embedder makes embeddings for all the frames in all batch sequences
         input_shape = x.shape
+        batch_size, seq_len = x.shape[0:2]
         
         x = x.reshape(-1, *input_shape[2:])
         #list to store the outputs from each encoders
@@ -111,6 +113,6 @@ class Embedded_Encoder(nn.Module):
 
         for idx, emds in enumerate(encoder_outputs):
             emds_dims = emds.shape[1:]
-            encoder_outputs[idx] = emds.reshape(input_shape[0], 10, *emds_dims)
+            encoder_outputs[idx] = emds.reshape(batch_size, seq_len, *emds_dims)
             
         return encoder_outputs

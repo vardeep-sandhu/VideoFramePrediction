@@ -15,21 +15,15 @@ class Model(nn.Module):
     
     def __init__(self):
         super().__init__()
-
         self.embd_model = Embedded_Encoder()
-
         self.conv_lstm_1 = ConvLSTM(input_dim= 64, hidden_dim = 64, kernel_size = (3, 3), num_layers= 2)
-
         self.conv_lstm_2 = ConvLSTM(input_dim= 128, hidden_dim = 128, kernel_size = (3, 3), num_layers= 2)
-
         self.conv_lstm_3 = ConvLSTM(input_dim= 256, hidden_dim = 256, kernel_size = (3, 3), num_layers= 2)
-
         self.decoder = Embedded_Decoder()
 
 
     def forward(self, x):
         embds = self.embd_model(x)
-
         batch_size, seq_len = x.shape[0:2]
 
         lstm_1 = self.conv_lstm_1(embds[0]) #[Batch_size, t, 64, 16, 16]

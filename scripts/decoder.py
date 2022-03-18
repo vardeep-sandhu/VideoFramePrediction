@@ -1,12 +1,15 @@
 import torch
 import torch.nn as nn
 
+
+
+
 class DecBlock(nn.Module):
     def __init__(self, in_ch, out_ch):
         super().__init__()
         self.out_ch = out_ch
-        self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, 3,stride=2,padding=(1, 1))
-        self.conv2 = nn.ConvTranspose2d(out_ch, out_ch, 2,stride=1)
+        self.conv1 = nn.ConvTranspose2d(in_ch, out_ch, kernel_size = 3,stride=2,padding=(1, 1))
+        self.conv2 = nn.ConvTranspose2d(out_ch, out_ch, 2, stride=1)
         self.relu = nn.ReLU(inplace=True)
         self.bn1 = nn.BatchNorm2d(out_ch)
         self.bn2 = nn.BatchNorm2d(out_ch)
@@ -25,12 +28,8 @@ class Decoder(nn.Module):
         
     
     def forward(self, x):
-        layers = []
-        
         for block in self.dec_blocks:
             x = block(x)
-            layers.append(x)
-
         return x
 
 class Embedded_Decoder(nn.Module):
