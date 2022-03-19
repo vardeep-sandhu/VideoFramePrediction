@@ -136,7 +136,7 @@ class ConvLSTM(nn.Module):
             each_layer_output = []
             # iterating over sequence length
 
-            for t in range(frames*2):
+            for t in range(frames * 2 - 1):
                 if t < 10:
                     h, c = self.conv_lstms[i](x=cur_layer_input[:, t, :, :, :],cur_state=[h, c])
                 

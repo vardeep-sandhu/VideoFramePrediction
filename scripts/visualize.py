@@ -33,7 +33,6 @@ def visualize_results(model, test_loader, device):
     show(grid_gt, "gt")
 
     grid_out = make_grid(predictions[0])
-    
     show(grid_out, "output")
 #     grid_out = make_grid(predictions[0])
 
@@ -55,7 +54,6 @@ if __name__ == "__main__":
     test_set = MNIST_Moving(root='.data/mnist', train=True, download=True, transform=transform, target_transform=transform)
 
     batch_size = 1
-
     test_loader = torch.utils.data.DataLoader(
                 dataset=test_set,
                 batch_size=batch_size,
