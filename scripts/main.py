@@ -7,8 +7,19 @@ from dataset import MNIST_Moving
 from model import Model
 import utils
 import wandb
+import argparse
+from attrdict import AttrDict
+
+def parse_commandline():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cfg_name', '-c', type=str)
+    args = parser.parse_args()
+    cfg = AttrDict(utils.load_cfg(args.cfg_name))
+    return args, cfg
 
 if __name__ == "__main__":
+    
+    args, cfg = parse_commandline()
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -16,10 +27,17 @@ if __name__ == "__main__":
                         transforms.Resize((64, 64)),
                        ])
     
-    train_set = MNIST_Moving(root='.data/mnist', train=True, download=True, transform=transform, target_transform=transform)
-    test_set = MNIST_Moving(root='.data/mnist', train=False, download=True, transform=transform, target_transform=transform)
-    
-    batch_size = 32
+    train_set = MNIST_Moving(root=cfg.dataset_path,
+                            train=True,
+                            transform=transform, 
+                            target_transform=transform)
+
+    test_set = MNIST_Moving(root=cfg.dataset_path,
+                            train=False, 
+                            transform=transform, 
+                            target_transform=transform)
+
+    batch_size = cfg.batch_size
 
     train_loader = DataLoader(
                     dataset=train_set,
@@ -37,14 +55,14 @@ if __name__ == "__main__":
     
     model = Model()
     mdoel = model.to(device)
-    wandb.watch(model, log_freq=100)
+    wandb.watch(model, log_freq=cfg.log_freq)
 
     print("Model Loaded")
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    scheduler = ReduceLROnPlateau(optimizer, factor=0.1, patience=10)
+    optimizer = torch.optim.Adam(model.parameters(), lr= cfg.learning_rate)
+    scheduler = ReduceLROnPlateau(optimizer, factor=cfg.factor, patience=cfg.patience)
 
     # mean_loss, loss_list = utils.train_epoch(model, train_loader, optimizer, criterion, 0, device)
 
     train_loss, test_loss, loss_iter, epochs = utils.train_model(model, optimizer, scheduler, criterion,\
-                                                                train_loader, test_loader, 100, device)
+                                                                train_loader, test_loader, cfg.epochs, device)

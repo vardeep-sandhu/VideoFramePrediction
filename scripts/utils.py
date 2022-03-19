@@ -1,3 +1,4 @@
+from importlib.abc import Loader
 import os
 import torch 
 import numpy as np
@@ -5,6 +6,8 @@ from tqdm import tqdm
 from torchvision.utils import make_grid
 import matplotlib.pyplot as plt
 import wandb
+import yaml
+from easydict import EasyDict
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
@@ -163,3 +166,10 @@ def visualize_results(model, test_loader, device):
 
     grid_out = make_grid(predictions[0])
     save_results(grid_out, "output")
+
+def load_cfg(name):
+    path = os.path.join("../configs", name)
+    with open(path, 'r') as file:
+        yaml_data = yaml.safe_load(file)
+    return yaml_data
+
