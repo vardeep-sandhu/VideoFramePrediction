@@ -1,0 +1,19 @@
+dataset_path: ../data/kth
+
+epochs: 100
+
+learning_rate: 0.001
+
+seq_len: 10
+
+prediction_len: 10
+
+batch_size: 32
+
+# Scheduler
+factor: 0.1
+
+patience: 10
+
+# Logging
+log_freq: 100

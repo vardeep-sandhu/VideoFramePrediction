@@ -1,4 +1,3 @@
-from importlib.abc import Loader
 import os
 import torch 
 import numpy as np
@@ -7,7 +6,6 @@ from torchvision.utils import make_grid
 import matplotlib.pyplot as plt
 import wandb
 import yaml
-from easydict import EasyDict
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
