@@ -1,17 +1,5 @@
 import torch
 import torch.nn as nn
-import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-import torchvision
-
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
-import numpy as np
-import torch.nn.functional as F
-from tqdm import tqdm
-from dataset import MNIST_Moving
-
-device = "cuda"
 
 class ConvLSTMCell(nn.Module):
 
@@ -32,30 +20,20 @@ class ConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=self.bias)
         
-    def forward(self, x, cur_state):
+    def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
-        x = x.to(device)
-        h_cur = h_cur.to(device)
-        
-        concat_input_hcur = torch.cat([x, h_cur], dim=1) 
-        concat_input_hcur = concat_input_hcur.to(device)
 
-        concat_input_hcur_conv = self.conv(concat_input_hcur)
-        concat_input_hcur_conv = concat_input_hcur_conv.to(device)
+        combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
 
-        cc_input_gate, cc_forget_gate, cc_output_gate, cc_output = torch.split(concat_input_hcur_conv, self.hidden_dim, dim=1)
-        
-        input_gate = torch.sigmoid(cc_input_gate +  c_cur)
+        combined_conv = self.conv(combined)
+        cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
+        i = torch.sigmoid(cc_i)
+        f = torch.sigmoid(cc_f)
+        o = torch.sigmoid(cc_o)
+        g = torch.tanh(cc_g)
 
-        forget_gate = torch.sigmoid(cc_forget_gate +  c_cur)
-
-        output = torch.tanh(cc_output)
-
-        c_next = forget_gate * c_cur + input_gate * output
-
-        output_gate = torch.sigmoid(cc_output_gate +  c_next)
-
-        h_next = output * torch.tanh(c_next)
+        c_next = f * c_cur + i * g
+        h_next = o * torch.tanh(c_next)
 
         return h_next, c_next
 
@@ -76,20 +54,6 @@ class ConvLSTMCell(nn.Module):
 
         
 class ConvLSTM(nn.Module):
-    """ 
-    Custom LSTM for images. Batches of images are fed to a Conv LSTM
-    
-    Args:
-    -----
-    input_dim: integer
-        Number of channels of the input.
-    hidden_dim: integer
-        dimensionality of the states in the cell
-    kernel_size: tuple
-        size of the kernel for convolutions
-    num_layers: integer
-        number of stacked LSTMS
-    """
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers, batch_first=False, bias=True, return_all_layers=False):
         super(ConvLSTM, self).__init__()
@@ -119,16 +83,14 @@ class ConvLSTM(nn.Module):
 
     def forward(self, x, hidden_state=None):
 
-        b, frames, c, h, w = x.size()
+        b, in_frames, c, h, w = x.size()
 
         if hidden_state is not None:
             raise NotImplementedError()
         else:
             hidden_state = self._init_hidden(batch_size=b,
                                              image_size=(h, w))
-        cur_layer_input = x
 
-        
         # iterating over no of layers
         for i in range(self.num_layers):
 
@@ -136,15 +98,15 @@ class ConvLSTM(nn.Module):
             each_layer_output = []
             # iterating over sequence length
 
-            for t in range(frames * 2 - 1):
-                if t < 10:
-                    h, c = self.conv_lstms[i](x=cur_layer_input[:, t, :, :, :],cur_state=[h, c])
-                
-                elif t >= 10:
+            for t in range(in_frames * 2):
+                if t < in_frames:
+                    h, c = self.conv_lstms[i](x[:, t, :, :, :], [h, c])
+                    each_layer_output.append(x[:, t, :, :, :])
+
+                else:
                     h_prev = each_layer_output[-1]
-                    h, c = self.conv_lstms[i](x = h_prev, cur_state=[h, c])
-                
-                each_layer_output.append(h)
+                    h, c = self.conv_lstms[i](h_prev, [h, c])
+                    each_layer_output.append(h)
 
             stacked_layer_output = torch.stack(each_layer_output, dim=1)
         return stacked_layer_output

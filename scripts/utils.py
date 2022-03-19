@@ -24,7 +24,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
 
         full_seq = torch.cat((seq, target), dim=1)
 
-        loss = criterion(predictions, full_seq[:, 1:, :, :, :])
+        loss = criterion(predictions, full_seq)
         
         loss_list.append(loss.item())
 
@@ -56,12 +56,14 @@ def eval_model(model, eval_loader, criterion, device):
         predictions = model(seq)
         predictions = predictions.to(device)
                 
-        loss = criterion(predictions[:, 9:, :, :, :], target)
+        loss = criterion(predictions[:, 10:, :, :, :], target)
         loss_list.append(loss.item())
             
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
+    
     mean_loss = np.mean(loss_list)
     visualize_results(model, eval_loader, device)
+    
     return mean_loss
 
 
@@ -74,6 +76,9 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     loss_iters = []
     epochs = []
     
+    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
+    wandb.save("model.onnx")
+
     for epoch in range(num_epochs):
            
         # validation epoch
@@ -91,7 +96,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
                 model=model, train_loader=train_loader, optimizer=optimizer,
                 criterion=criterion, epoch=epoch, device=device
             )
-        scheduler.step()
+        scheduler.step(loss)
         train_loss.append(mean_loss)
         loss_iters = loss_iters + cur_loss_iters
         
@@ -104,8 +109,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
 
         wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
     
-    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx")
-    wandb.save("model.onnx")
+
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
 
@@ -131,6 +135,7 @@ def loading_model(model, path):
     # stats = checkpoint['stats']
     return model, optimizer, epoch
 
+
 def save_results(grid, name):
     fix, axs = plt.subplots()
     fix.set_size_inches(25,8)
@@ -138,6 +143,8 @@ def save_results(grid, name):
     axs.imshow(grid.cpu().numpy().transpose(1,2,0))
     axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
+    wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
+
 
 def visualize_results(model, test_loader, device):
     test_input, test_target = next(iter(test_loader))

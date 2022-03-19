@@ -51,7 +51,7 @@ class EncBlock(nn.Module):
         # Now we inc channel length
         out = self.conv3(out)
         out = self.bn3(out)
-        # out = self.relu(out)
+        out = self.relu(out)
         return out
 
 class Encoder(nn.Module):
@@ -64,10 +64,10 @@ class Encoder(nn.Module):
 
         self.enc_blocks = nn.ModuleList([EncBlock(channels[i], channels[i+1]) for i in range(len(channels)-1)])
 
-        
     def forward(self, x):
         # Input = [N, 1, 64, 64]
 
+#       If channel = 1 then additional conv 
         if x.shape[1] == 1:
             x = self.conv1(x)
             x = self.bn1(x)
@@ -86,31 +86,30 @@ class Embedded_Encoder(nn.Module):
         super().__init__()
         self.firstEncoder= Encoder((16, 32, 64))
 
-        self.secondEncoder= Encoder((64 , 128))
+        self.secondEncoder= Encoder((64, 128))
 
-        self.thirdEncoder= Encoder((128 , 256))
+        self.thirdEncoder= Encoder((128, 256))
 
     def forward(self, x):
-        # Embedder makes embeddings for all the frames in all batch sequences
+
         input_shape = x.shape
         batch_size, seq_len = x.shape[0:2]
         
+        # Changed to 4D
         x = x.reshape(-1, *input_shape[2:])
-        #list to store the outputs from each encoders
+
         encoder_outputs = []
-        # print("first encoder not done")
-
-        x=self.firstEncoder(x)
         
-        # print("first encoder done ")
+        x=self.firstEncoder(x)
         encoder_outputs.append(x)
+
         x=self.secondEncoder(x)
-
         encoder_outputs.append(x)
+
         x=self.thirdEncoder(x)
-
         encoder_outputs.append(x)
 
+# Back to 5D
         for idx, emds in enumerate(encoder_outputs):
             emds_dims = emds.shape[1:]
             encoder_outputs[idx] = emds.reshape(batch_size, seq_len, *emds_dims)
