@@ -1,4 +1,6 @@
-dataset_path: ../data/kth
+dataset: kth
+
+dataset_path: ../KTH
 
 epochs: 100
 
@@ -8,7 +10,7 @@ seq_len: 10
 
 prediction_len: 10
 
-batch_size: 32
+batch_size: 1
 
 # Scheduler
 factor: 0.1
