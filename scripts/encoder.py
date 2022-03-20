@@ -51,7 +51,6 @@ class EncBlock(nn.Module):
         # Now we inc channel length
         out = self.conv3(out)
         out = self.bn3(out)
-        out = self.relu(out)
         return out
 
 class Encoder(nn.Module):

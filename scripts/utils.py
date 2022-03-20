@@ -23,10 +23,9 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         predictions = model(seq)
         predictions = predictions.to(device)
 
-        full_seq = torch.cat((seq, target), dim=1)
+        # full_seq = torch.cat((seq, target), dim=1)
 
-        loss = criterion(predictions, full_seq)
-        
+        loss = criterion(predictions[:, 10:, :, :, :], target)
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
@@ -38,7 +37,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
         if idx % 10 == 0:
             wandb.log({"loss": loss})
-
+        
     mean_loss = np.mean(loss_list)
 
     return mean_loss, loss_list
@@ -61,7 +60,7 @@ def eval_model(model, eval_loader, criterion, device):
         loss_list.append(loss.item())
             
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
-    
+        
     mean_loss = np.mean(loss_list)
     visualize_results(model, eval_loader, device)
     
@@ -82,6 +81,16 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
 
     for epoch in range(num_epochs):
            
+        # training epoch
+        model.train()  # important for dropout and batch norms
+        mean_loss, cur_loss_iters = train_epoch(
+                model=model, train_loader=train_loader, optimizer=optimizer,
+                criterion=criterion, epoch=epoch, device=device
+            )
+
+        train_loss.append(mean_loss)
+        loss_iters = loss_iters + cur_loss_iters
+        
         # validation epoch
         model.eval()  # important for dropout and batch norms
         loss = eval_model(
@@ -91,16 +100,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         val_loss.append(loss)
         epochs.append(epoch+1)
         
-        # training epoch
-        model.train()  # important for dropout and batch norms
-        mean_loss, cur_loss_iters = train_epoch(
-                model=model, train_loader=train_loader, optimizer=optimizer,
-                criterion=criterion, epoch=epoch, device=device
-            )
         scheduler.step(loss)
-        train_loss.append(mean_loss)
-        loss_iters = loss_iters + cur_loss_iters
-        
 
         print(f"Epoch {epoch+1}/{num_epochs}")
         print(f"    Train loss: {round(mean_loss, 5)}")
@@ -166,8 +166,40 @@ def visualize_results(model, test_loader, device):
     save_results(grid_out, "output")
 
 def load_cfg(name):
-    path = os.path.join("../configs", name)
+    path = os.path.join("configs", name)
     with open(path, 'r') as file:
         yaml_data = yaml.safe_load(file)
     return yaml_data
 
+
+def load_dataset(opt):
+    if opt.dataset == 'smmnist':
+        from dataset.moving_mnist import MovingMNIST
+        train_data = MovingMNIST(
+                train=True,
+                data_root=opt.dataset_path,
+                seq_len=opt.n_past+opt.n_future,
+                image_size=opt.image_width,
+                deterministic=False,
+                num_digits=opt.num_digits)
+        test_data = MovingMNIST(
+                train=False,
+                data_root=opt.dataset_path,
+                seq_len=opt.n_eval,
+                image_size=opt.image_width,
+                deterministic=False,
+                num_digits=opt.num_digits)
+    # elif opt.dataset == 'kth':
+    #     from data.kth import KTH 
+    #     train_data = KTH(
+    #             train=True, 
+    #             data_root=opt.data_root,
+    #             seq_len=opt.n_past+opt.n_future, 
+    #             image_size=opt.image_width)
+    #     test_data = KTH(
+    #             train=False, 
+    #             data_root=opt.data_root,
+    #             seq_len=opt.n_eval, 
+    #             image_size=opt.image_width)
+    
+    return train_data, test_data

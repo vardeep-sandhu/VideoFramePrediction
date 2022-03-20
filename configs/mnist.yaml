@@ -1,12 +1,16 @@
-dataset_path: ../data/mnist
+dataset: smmnist
+
+dataset_path: data
 
 epochs: 100
 
 learning_rate: 0.001
 
-seq_len: 10
-
-prediction_len: 10
+n_past: 10
+n_future: 10
+image_width: 64
+n_eval: 20
+num_digits: 2
 
 batch_size: 32
 

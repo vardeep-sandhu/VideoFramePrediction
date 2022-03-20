@@ -3,7 +3,8 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from dataset import MNIST_Moving
+# from dataset import MNIST_Moving
+from dataset.moving_mnist import MovingMNIST
 from model import Model
 import utils
 import wandb
@@ -26,17 +27,9 @@ if __name__ == "__main__":
     transform = transforms.Compose([transforms.ToTensor(),
                         transforms.Resize((64, 64)),
                        ])
+
+    train_set, test_set = utils.load_dataset(cfg)
     
-    train_set = MNIST_Moving(root=cfg.dataset_path,
-                            train=True,
-                            transform=transform, 
-                            target_transform=transform)
-
-    test_set = MNIST_Moving(root=cfg.dataset_path,
-                            train=False, 
-                            transform=transform, 
-                            target_transform=transform)
-
     batch_size = cfg.batch_size
 
     train_loader = DataLoader(
@@ -59,6 +52,8 @@ if __name__ == "__main__":
 
     print("Model Loaded")
     criterion = nn.MSELoss()
+    # criterion = nn.L1Loss()
+    
     optimizer = torch.optim.Adam(model.parameters(), lr= cfg.learning_rate)
     scheduler = ReduceLROnPlateau(optimizer, factor=cfg.factor, patience=cfg.patience)
 

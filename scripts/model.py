@@ -20,8 +20,6 @@ class Model(nn.Module):
 
         embds = self.embd_model(x)
         batch_size, seq_len = x.shape[0:2]
-
-        final_enc_embedding = embds[2]
         
         lstm_1 = self.conv_lstm_1(embds[0]) #[Batch_size, t, 64, 16, 16]
         lstm_2 = self.conv_lstm_2(embds[1]) #[Batch_size, t, 128, 8, 8]
@@ -29,5 +27,5 @@ class Model(nn.Module):
         
         lstm_outputs = [lstm_3, lstm_2, lstm_1]
 
-        out = self.decoder(lstm_outputs, final_enc_embedding, batch_size, seq_len)
+        out = self.decoder(lstm_outputs, embds, batch_size, seq_len)
         return out

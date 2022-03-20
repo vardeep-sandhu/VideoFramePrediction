@@ -74,23 +74,26 @@ class Embedded_Decoder(nn.Module):
 
         self.sigmoid_layer = nn.Sigmoid()
 
-    def forward(self, lstm_outputs, final_enc_embeddings , batch_size, seq_len):
+    def forward(self, lstm_outputs, embds , batch_size, seq_len):
 
         # Decoding all images together so changed dims to [Batch_size * t, 256, 4, 4]
         batch_size, seq_len = lstm_outputs[0].shape[0:2]
 
-        last_context_frame = final_enc_embeddings[:, -1, :, :, :].unsqueeze(1)
-        last_context_repeat = torch.cat([last_context_frame]*10, dim=1)        
-        final_enc_embeddings = torch.cat((final_enc_embeddings, last_context_repeat), dim=1)
+        for idx in range(len(embds)):
+            last_context_frame = embds[idx][:, -1, :, :, :].unsqueeze(1)
+            last_context_repeat = torch.cat([last_context_frame]*10, dim=1)        
+            zeros  = torch.zeros_like(embds[idx])
+            embds[idx] = torch.cat((zeros, last_context_repeat), dim=1)
 
-        for idx, _ in enumerate(lstm_outputs):
+        for idx in range(len(lstm_outputs)):
             lstm_outputs[idx] = lstm_outputs[idx].reshape(-1, *lstm_outputs[idx].shape[2:])
 
         
-        fst_dec = self.firstDecoder(lstm_outputs[0] + final_enc_embeddings.reshape(*lstm_outputs[0].shape)) 
-        fst_dec = self.firstDecoder(lstm_outputs[0])
-        scnd_dec = self.secondDecoder(fst_dec + lstm_outputs[1]) 
-        thrd_dec = self.thirdDecoder(scnd_dec + lstm_outputs[2])
+        fst_dec = self.firstDecoder(lstm_outputs[0] + embds[2].reshape(*lstm_outputs[0].shape)) 
+        
+        # fst_dec = self.firstDecoder(lstm_outputs[0])
+        scnd_dec = self.secondDecoder(fst_dec + lstm_outputs[1] + embds[1].reshape(*lstm_outputs[1].shape)) 
+        thrd_dec = self.thirdDecoder(scnd_dec + lstm_outputs[2] + embds[0].reshape(*lstm_outputs[2].shape))
         out = self.sigmoid_layer(thrd_dec)
         
 #       Reshape to 5D again
