@@ -3,8 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-# from dataset import MNIST_Moving
-from dataset.moving_mnist import MovingMNIST
+
 from model import Model
 import utils
 import wandb

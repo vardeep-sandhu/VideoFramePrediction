@@ -1,14 +1,21 @@
 import torch
 from torchvision.utils import make_grid
 import matplotlib.pyplot as plt
+import torchvision.transforms.functional as F
+import numpy as np
 
-def show(grid, name):
-    fix, axs = plt.subplots()
-    fix.set_size_inches(25,8)
+def show(grids, name):
 
-    axs.imshow(grid.cpu().numpy().transpose(1,2,0))
-    axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
-    fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
+    fig, axs = plt.subplots(nrows=len(grids), squeeze=False)
+    # fig.set_size_inches(25,8)
+
+    for i, grid in enumerate(grids):
+        grid = grid.detach()
+        grid = F.to_pil_image(grid)
+        
+        axs[0, i].imshow(np.asarray(grid))
+        axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    fig.savefig(f"{name}.png", format="png", bbox_inches="tight")
 #     fix.show()
 
 def visualize_results(model, test_loader, device):
@@ -24,8 +31,12 @@ def visualize_results(model, test_loader, device):
         predictions = model(test_input)
         predictions = predictions.to(device)
     
-    grid_gt = make_grid(full_gt_seq[0])
-    show(grid_gt, "gt")
+    visual_grid = []
+    for idx in range(0, 5):
+        grid_gt = make_grid(full_gt_seq[idx], 5)
+        grid_out = make_grid(predictions[idx], 5)
+        visual_grid.append(grid_gt, grid_out)
 
-    grid_out = make_grid(predictions[0])
-    show(grid_out, "output")
+    show(visual_grid, "grid")
+
+    
