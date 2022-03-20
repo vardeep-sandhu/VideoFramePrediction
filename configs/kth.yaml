@@ -1,6 +1,6 @@
 dataset: kth
 
-dataset_path: ../KTH
+dataset_path: C:\Users\aysha\Cuda Lab\KTH
 
 epochs: 100
 
