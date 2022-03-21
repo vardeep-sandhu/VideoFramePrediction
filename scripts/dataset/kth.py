@@ -52,7 +52,6 @@ class KTH(Dataset):
                                 data.append({'video_filepath': filepath, 'start':i, 'end':end, 'label':label, 
                                          'label_desc' : label_desc, 'person':person_num})
                             idx=idx+1
-        print(data[0])
         return data
     
     def __process_video_frames(self, data, base_dir):
@@ -63,6 +62,8 @@ class KTH(Dataset):
         if not os.path.isdir(base_dir) : os.mkdir(base_dir)
         count=0
         for i, data_item in enumerate(data):
+            # Print the video processed now
+            print(data_item['video_filepath'])
             vid = imageio.get_reader(data_item['video_filepath'])
             frames = []
             for frame_num in range(data_item['start'], data_item['end']):
@@ -71,17 +72,15 @@ class KTH(Dataset):
 
                     frame = Image.fromarray(np.array(frame))
                     frame = frame.convert("L")
-                    # frame = self.__transform(frame) 
-                    frame = np.array(frame.getdata(), dtype=np.uint8)
+                    frame = self.__transform(frame)
                     frames.append([frame])
+
                 except Exception as e:
-                    print(e)
-                    
                     continue
-            frames = torch.from_numpy(np.array(frames)) / 255
-            
-            if((not(i>=65 and i<=68))):
+            # [NOTE]: Ayesha why did you add this condition below
+            if not (i>=65 and i<=68):
                 torch.save(frames, base_dir + '/' + str(count) + '.pt')
+                count += 1
 
 
     def get_indices_for_persons(self, person_ids):
