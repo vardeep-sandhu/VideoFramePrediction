@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import wandb
 import yaml
 import torchvision.transforms.functional as F
+import torchvision.transforms as transforms
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
@@ -36,8 +37,8 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
-        if idx % 10 == 0:
-            wandb.log({"loss": loss})
+        # if idx % 10 == 0:
+        #     wandb.log({"loss": loss})
     mean_loss = np.mean(loss_list)
 
     return mean_loss, loss_list
@@ -75,8 +76,8 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     loss_iters = []
     epochs = []
     
-    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
-    wandb.save("model.onnx")
+    # torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
+    # wandb.save("model.onnx")
 
     for epoch in range(num_epochs):
            
@@ -107,7 +108,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         print("\n")
         saving_model(model, optimizer, epoch)
 
-        wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
+        # wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
     
 
     print(f"Training completed")
@@ -147,7 +148,7 @@ def show(grids, name):
         axs[i, 0].imshow(np.asarray(grid))
         axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fig.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    wandb.log({"outputs" : wandb.Image(fig)}) 
+    # wandb.log({"outputs" : wandb.Image(fig)}) 
 
 def visualize_results(model, test_loader, device):
     test_input, test_target = next(iter(test_loader))
@@ -195,17 +196,17 @@ def load_dataset(opt):
                 image_size=opt.image_width,
                 deterministic=False,
                 num_digits=opt.num_digits)
-    # elif opt.dataset == 'kth':
-    #     from data.kth import KTH 
-    #     train_data = KTH(
-    #             train=True, 
-    #             data_root=opt.data_root,
-    #             seq_len=opt.n_past+opt.n_future, 
-    #             image_size=opt.image_width)
-    #     test_data = KTH(
-    #             train=False, 
-    #             data_root=opt.data_root,
-    #             seq_len=opt.n_eval, 
-    #             image_size=opt.image_width)
+    elif opt.dataset == 'kth':
+         from dataset.kth import KTH 
+         transform = transforms.Compose([transforms.ToTensor(),
+                             transforms.Resize((64, 64)),
+                            ])
+         train_data = KTH(
+             data_root=opt.dataset_path,
+             transform=transform).train_test(True)
+
+         test_data = KTH(
+             data_root=opt.dataset_path,
+             transform=transform).train_test(False)
     
     return train_data, test_data
