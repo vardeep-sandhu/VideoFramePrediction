@@ -24,9 +24,9 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         predictions = model(seq)
         predictions = predictions.to(device)
 
-        # full_seq = torch.cat((seq, target), dim=1)
+        full_seq = torch.cat((seq, target), dim=1)
 
-        loss = criterion(predictions[:, 10:, :, :, :], target)
+        loss = criterion(predictions, full_seq)
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
