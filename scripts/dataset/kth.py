@@ -88,7 +88,3 @@ class KTH(Dataset):
             return subset_datasets['Train']
         else:
             return subset_datasets['Test']
-import torchvision.transforms as transforms        
-transform = transforms.Compose([
-                    transforms.Resize((64, 64)),
-                   ])
