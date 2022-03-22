@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 21 18:56:48 2022
-
 @author: aysha
 """
 
@@ -49,7 +48,7 @@ class KTH(Dataset):
                     filepath = base_dir + '/' + label_desc + '/' + split_1[0].strip() + '_uncomp.avi' 
     
                     for overall_start, overall_end in [tuple(split_2.split('-')) for split_2 in split_1[1].strip().split(',')]:
-                        for i in range(int(overall_start) , int(overall_end) - num_frames, num_frames):
+                        for i in range(int(overall_start) , int(overall_end) - 5, 5):
                             end = i + num_frames
                             data.append({'video_filepath': filepath, 'start':i, 'end':end, 'label':label, 
                                          'label_desc' : label_desc, 'person':person_num})
