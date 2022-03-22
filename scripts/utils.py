@@ -3,11 +3,10 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from torchvision.utils import make_grid
+import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import wandb
 import yaml
-import torchvision.transforms.functional as F
-import torchvision.transforms as transforms
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
@@ -26,8 +25,10 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         predictions = predictions.to(device)
 
         full_seq = torch.cat((seq, target), dim=1)
-
-        loss = criterion(predictions, full_seq)
+        print(predictions.shape)
+        print(full_seq.shape)
+        
+        loss = criterion(predictions[:, 10:, :, :, :], target)
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
@@ -39,6 +40,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
         # if idx % 10 == 0:
         #     wandb.log({"loss": loss})
+        
     mean_loss = np.mean(loss_list)
 
     return mean_loss, loss_list
@@ -61,6 +63,7 @@ def eval_model(model, eval_loader, criterion, device):
         loss_list.append(loss.item())
             
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
+        
     mean_loss = np.mean(loss_list)
     visualize_results(model, eval_loader, device)
     
@@ -136,19 +139,16 @@ def loading_model(model, path):
     # stats = checkpoint['stats']
     return model, optimizer, epoch
 
-def show(grids, name):
 
-    fig, axs = plt.subplots(nrows=len(grids), squeeze=False)
-    fig.set_size_inches(25,8)
+def save_results(grid, name):
+    fix, axs = plt.subplots()
+    fix.set_size_inches(25,8)
 
-    for i, grid in enumerate(grids):
-        grid = grid.detach()
-        grid = F.to_pil_image(grid)
-        
-        axs[i, 0].imshow(np.asarray(grid))
-        axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
-    fig.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    # wandb.log({"outputs" : wandb.Image(fig)}) 
+    axs.imshow(grid.cpu().numpy().transpose(1,2,0))
+    axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
+    # wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
+
 
 def visualize_results(model, test_loader, device):
     test_input, test_target = next(iter(test_loader))
@@ -161,17 +161,13 @@ def visualize_results(model, test_loader, device):
     model.eval() 
     with torch.no_grad():
         predictions = model(test_input)
-        predictions = predictions.to(device)
     
-    visual_grid = []
-    for idx in range(0, 5):
-        grid_gt = make_grid(full_gt_seq[idx], 20)
-        grid_out = make_grid(predictions[idx], 20)
-        visual_grid.append(grid_gt)
-        visual_grid.append(grid_out)
-    show(visual_grid, "grid")
+    grid_gt = make_grid(full_gt_seq[0])
+    save_results(grid_gt, "gt")
 
-    
+    grid_out = make_grid(predictions[0])
+    save_results(grid_out, "output")
+
 def load_cfg(name):
     path = os.path.join("configs", name)
     with open(path, 'r') as file:
@@ -198,15 +194,13 @@ def load_dataset(opt):
                 num_digits=opt.num_digits)
     elif opt.dataset == 'kth':
          from dataset.kth import KTH 
-         transform = transforms.Compose([transforms.ToTensor(),
-                             transforms.Resize((64, 64)),
-                            ])
+         transform = transforms.Compose([transforms.Resize((64, 64))])
          train_data = KTH(
-             data_root=opt.dataset_path,
+             directory=opt.dataset_path,
              transform=transform).train_test(True)
 
          test_data = KTH(
-             data_root=opt.dataset_path,
+             directory=opt.dataset_path,
              transform=transform).train_test(False)
     
     return train_data, test_data
