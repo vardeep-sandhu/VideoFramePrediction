@@ -12,10 +12,8 @@ prediction_len: 10
 
 batch_size: 1
 
-# Scheduler
 factor: 0.1
 
 patience: 10
 
-# Logging
 log_freq: 100

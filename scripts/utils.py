@@ -7,6 +7,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import wandb
 import yaml
+import torchvision.transforms.functional as F
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
@@ -25,10 +26,8 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         predictions = predictions.to(device)
 
         full_seq = torch.cat((seq, target), dim=1)
-        print(predictions.shape)
-        print(full_seq.shape)
-        
-        loss = criterion(predictions[:, 10:, :, :, :], target)
+
+        loss = criterion(predictions, full_seq)
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
@@ -38,9 +37,8 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
-        # if idx % 10 == 0:
-        #     wandb.log({"loss": loss})
-        
+        if idx % 10 == 0:
+            wandb.log({"loss": loss})
     mean_loss = np.mean(loss_list)
 
     return mean_loss, loss_list
@@ -79,8 +77,8 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     loss_iters = []
     epochs = []
     
-    # torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
-    # wandb.save("model.onnx")
+    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
+    wandb.save("model.onnx")
 
     for epoch in range(num_epochs):
            
@@ -111,9 +109,8 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         print("\n")
         saving_model(model, optimizer, epoch)
 
-        # wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
+        wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
     
-
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
 
@@ -147,8 +144,22 @@ def save_results(grid, name):
     axs.imshow(grid.cpu().numpy().transpose(1,2,0))
     axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    # wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
+    wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
 
+
+def show(grids, name):
+
+    fig, axs = plt.subplots(nrows=len(grids), squeeze=False)
+    fig.set_size_inches(25,8)
+
+    for i, grid in enumerate(grids):
+        grid = grid.detach()
+        grid = F.to_pil_image(grid)
+        
+        axs[i, 0].imshow(np.asarray(grid))
+        axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    fig.savefig(f"{name}.png", format="png", bbox_inches="tight")
+    wandb.log({"outputs" : wandb.Image(fig)}) 
 
 def visualize_results(model, test_loader, device):
     test_input, test_target = next(iter(test_loader))
@@ -161,12 +172,16 @@ def visualize_results(model, test_loader, device):
     model.eval() 
     with torch.no_grad():
         predictions = model(test_input)
+        predictions = predictions.to(device)
     
-    grid_gt = make_grid(full_gt_seq[0])
-    save_results(grid_gt, "gt")
+    visual_grid = []
+    for idx in range(0, 5):
+        grid_gt = make_grid(full_gt_seq[idx], 20)
+        grid_out = make_grid(predictions[idx], 20)
+        visual_grid.append(grid_gt)
+        visual_grid.append(grid_out)
+    show(visual_grid, "grid")
 
-    grid_out = make_grid(predictions[0])
-    save_results(grid_out, "output")
 
 def load_cfg(name):
     path = os.path.join("configs", name)
@@ -193,14 +208,18 @@ def load_dataset(opt):
                 deterministic=False,
                 num_digits=opt.num_digits)
     elif opt.dataset == 'kth':
-         from dataset.kth import KTH 
-         transform = transforms.Compose([transforms.Resize((64, 64))])
-         train_data = KTH(
-             directory=opt.dataset_path,
-             transform=transform).train_test(True)
+        from dataset.kth import KTH 
+        transform = transforms.Compose([transforms.Resize((64, 64))])
+        train_data = KTH(
+            directory=opt.dataset_path,
+            transform=transform,
+            download=True,
+            train=True)
 
-         test_data = KTH(
-             directory=opt.dataset_path,
-             transform=transform).train_test(False)
-    
+        test_data = KTH(
+            directory=opt.dataset_path,
+            transform=transform,
+            download=False,
+            train=True)
+
     return train_data, test_data
