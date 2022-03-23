@@ -39,6 +39,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
         if idx % 10 == 0:
             wandb.log({"loss": loss})
+        
     mean_loss = np.mean(loss_list)
 
     return mean_loss, loss_list
@@ -213,13 +214,16 @@ def load_dataset(opt):
         train_data = KTH(
             directory=opt.dataset_path,
             transform=transform,
-            download=True,
-            train=True)
+            download=False,
+            train=True).prepare_data()
 
+        
         test_data = KTH(
             directory=opt.dataset_path,
             transform=transform,
             download=False,
-            train=True)
+            train=False).prepare_data()
 
+    print("Length of training and testing dataset respectively:")
+    print(len(train_data), len(test_data))
     return train_data, test_data

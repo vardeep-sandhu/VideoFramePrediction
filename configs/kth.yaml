@@ -2,7 +2,7 @@ dataset: kth
 
 dataset_path: data/kth
 
-epochs: 100
+epochs: 200
 
 learning_rate: 0.001
 
@@ -10,7 +10,7 @@ seq_len: 10
 
 prediction_len: 10
 
-batch_size: 1
+batch_size: 32
 
 factor: 0.1
 

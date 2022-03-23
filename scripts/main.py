@@ -34,12 +34,12 @@ if __name__ == "__main__":
     train_loader = DataLoader(
                     dataset=train_set,
                     batch_size=batch_size,
-                    shuffle=False)
+                    shuffle=True)
 
     test_loader = DataLoader(
                     dataset=test_set,
                     batch_size=batch_size,
-                    shuffle=False)
+                    shuffle=True)
     print("Data loaders ready")
 
 # W and B for logging grads

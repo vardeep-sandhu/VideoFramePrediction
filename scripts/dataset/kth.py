@@ -12,7 +12,7 @@ class KTH(Dataset):
         self.__frames_per_item = frames_per_item
         self.__download=download
         self.train = train
-        self.prepare_data()
+        # self.data = self.prepare_data()
 
     def prepare_data(self):
         subset_datasets = {}
@@ -30,6 +30,7 @@ class KTH(Dataset):
         
         if self.train:
             return subset_datasets['Train']
+            
         else:
             return subset_datasets['Test']
 
