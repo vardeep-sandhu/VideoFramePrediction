@@ -19,7 +19,7 @@ class MovingMNIST_test(Dataset):
     train_file = 'moving_train.pt'
     test_file = 'moving_test.pt'
 
-    def __init__(self, root, train=True, split=10_000, transform=None, target_transform=None, download=True) -> None:
+    def __init__(self, root, train=True, split=1_000, transform=None, target_transform=None, download=True) -> None:
         super().__init__()
         self.root = os.path.expanduser(root)
         self.transform = transform
