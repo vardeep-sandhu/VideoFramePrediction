@@ -43,11 +43,11 @@ if __name__ == "__main__":
     print("Data loaders ready")
 
 # W and B for logging grads
-    wandb.init()
+    # wandb.init()
     
     model = Model()
     mdoel = model.to(device)
-    wandb.watch(model, log_freq=cfg.log_freq)
+    # wandb.watch(model, log_freq=cfg.log_freq)
 
     print("Model Loaded")
     criterion = nn.MSELoss()

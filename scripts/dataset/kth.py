@@ -1,50 +1,47 @@
-from torch.utils.data import Dataset, Subset
+from torch.utils.data import Dataset
 import numpy as np
 import cv2, torch, os
 class KTH(Dataset):
     
     categories = ["boxing", "handclapping", "handwaving","jogging", "running", "walking"]
 
-
     def __init__(self, directory, download, train: bool, frames_per_item = 20, transform=None):
         self.__transform = transform
         self.__directory = directory
         self.__frames_per_item = frames_per_item
         self.__download=download
-        self.train = train
-        # self.data = self.prepare_data()
+        
+        if train:
+            self.train = True
+            self.persons = ['11', '12', '13', '14', '15', '16', '17', '18','19', '20', '21', '23', '24', '25', '01', '04']
+        else:
+            self.train = False
+            self.persons = ['22', '02', '03', '05', '06', '07', '08', '09', '10']
+
+        self.prepare_data()
 
     def prepare_data(self):
-        subset_datasets = {}
-        split = {'Train': ['11', '12', '13', '14', '15', '16', '17', '18','19', '20', '21', '23', '24', '25', '01', '04'],
-                                     'Test' : ['22', '02', '03', '05', '06', '07', '08', '09', '10']}
-
         self.__data = self.__parse_sequence_file(self.__directory, self.__frames_per_item)
 
         if(self.__download):
             self.__process_video_frames(self.__data, self.__directory + '/data', self.__transform)
-        
-        for split, ids in split.items():
-            idx = self.get_indices_for_persons(ids)
-            subset_datasets[split] = Subset(self, idx)
-        
-        if self.train:
-            return subset_datasets['Train']
             
-        else:
-            return subset_datasets['Test']
-
+        idx = self.get_indices_for_persons(self.persons)
+        # These indexes correspond to the indexes of the .pt files that we generated 
+        self.data_idx = idx
 
     def __len__(self):
-        return len(self.__data)
+        return len(self.data_idx)
     
-
     def __getitem__(self, idx):
-        item_data = torch.load(self.__directory + '/data/' + str(idx) + '.pt')
 
+        idx_to_load = self.data_idx[idx]
+        full_path_of_file_to_load = os.path.join(self.__directory, "data", f"{str(idx_to_load)}.pt")
+
+        item_data = torch.load(full_path_of_file_to_load)
         item_data=self.__transform(item_data)
-        
         item_data=torch.swapaxes(item_data, 0, 1)
+
         return (item_data[:10,:,:,:], item_data[10:,:,:,:])
 
 
@@ -87,4 +84,3 @@ class KTH(Dataset):
 
     def get_indices_for_persons(self, person_ids):
         return [ i for i, x in enumerate(self.__data) if x['person'] in person_ids]
-

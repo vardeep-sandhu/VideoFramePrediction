@@ -15,7 +15,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     loss_list = []
     progress_bar = tqdm(enumerate(train_loader), total=len(train_loader))
     for idx, (seq, target) in progress_bar:
-
+        
         seq = seq.type(torch.FloatTensor).to(device)
         target = target.type(torch.FloatTensor).to(device)
         
@@ -37,8 +37,8 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
-        if idx % 10 == 0:
-            wandb.log({"loss": loss})
+        # if idx % 10 == 0:
+        #     wandb.log({"loss": loss})
         
     mean_loss = np.mean(loss_list)
 
@@ -78,8 +78,8 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     loss_iters = []
     epochs = []
     
-    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
-    wandb.save("model.onnx")
+    # torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
+    # wandb.save("model.onnx")
 
     for epoch in range(num_epochs):
            
@@ -110,7 +110,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         print("\n")
         saving_model(model, optimizer, epoch)
 
-        wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
+        # wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
     
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
@@ -145,7 +145,7 @@ def save_results(grid, name):
     axs.imshow(grid.cpu().numpy().transpose(1,2,0))
     axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
+    # wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
 
 
 def show(grids, name):
@@ -160,7 +160,7 @@ def show(grids, name):
         axs[i, 0].imshow(np.asarray(grid))
         axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fig.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    wandb.log({"outputs" : wandb.Image(fig)}) 
+    # wandb.log({"outputs" : wandb.Image(fig)}) 
 
 def visualize_results(model, test_loader, device):
     test_input, test_target = next(iter(test_loader))
@@ -215,15 +215,12 @@ def load_dataset(opt):
             directory=opt.dataset_path,
             transform=transform,
             download=False,
-            train=True).prepare_data()
+            train=True)
 
-        
         test_data = KTH(
             directory=opt.dataset_path,
             transform=transform,
             download=False,
-            train=False).prepare_data()
+            train=False)
 
-    print("Length of training and testing dataset respectively:")
-    print(len(train_data), len(test_data))
     return train_data, test_data
