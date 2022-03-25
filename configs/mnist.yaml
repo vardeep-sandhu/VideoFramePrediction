@@ -2,7 +2,7 @@ dataset: smmnist
 
 dataset_path: data
 
-epochs: 100
+epochs: 50
 
 learning_rate: 0.001
 

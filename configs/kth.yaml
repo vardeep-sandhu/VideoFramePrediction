@@ -2,7 +2,7 @@ dataset: kth
 
 dataset_path: data/kth
 
-epochs: 200
+epochs: 55
 
 learning_rate: 0.001
 

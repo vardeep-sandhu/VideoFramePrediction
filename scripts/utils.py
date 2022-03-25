@@ -37,8 +37,8 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
-        # if idx % 10 == 0:
-        #     wandb.log({"loss": loss})
+        if idx % 50 == 0:
+            wandb.log({"loss": loss})
         
     mean_loss = np.mean(loss_list)
 
@@ -46,7 +46,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
 
 
 @torch.no_grad()
-def eval_model(model, eval_loader, criterion, device):
+def eval_model(model, eval_loader, criterion, device, epoch):
     """ Evaluating the model for either validation or test """
     loss_list = []
     pbar = tqdm(enumerate(eval_loader), total=len(eval_loader))
@@ -64,7 +64,7 @@ def eval_model(model, eval_loader, criterion, device):
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
         
     mean_loss = np.mean(loss_list)
-    visualize_results(model, eval_loader, device)
+    visualize_results(model, eval_loader, device, epoch)
     
     return mean_loss
 
@@ -78,11 +78,19 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     loss_iters = []
     epochs = []
     
-    # torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
-    # wandb.save("model.onnx")
+    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
+    wandb.save("model.onnx")
 
     for epoch in range(num_epochs):
-           
+                 
+        # validation epoch
+        model.eval()  # important for dropout and batch norms
+        loss = eval_model(
+                    model=model, eval_loader=valid_loader,
+                    criterion=criterion, device=device, epoch=epoch
+            )
+        val_loss.append(loss)
+
         # training epoch
         model.train()  # important for dropout and batch norms
         mean_loss, cur_loss_iters = train_epoch(
@@ -92,14 +100,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
 
         train_loss.append(mean_loss)
         loss_iters = loss_iters + cur_loss_iters
-        
-        # validation epoch
-        model.eval()  # important for dropout and batch norms
-        loss = eval_model(
-                    model=model, eval_loader=valid_loader,
-                    criterion=criterion, device=device
-            )
-        val_loss.append(loss)
+  
         epochs.append(epoch+1)
         
         scheduler.step(loss)
@@ -110,7 +111,7 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         print("\n")
         saving_model(model, optimizer, epoch)
 
-        # wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
+        wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
     
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
@@ -145,7 +146,7 @@ def save_results(grid, name):
     axs.imshow(grid.cpu().numpy().transpose(1,2,0))
     axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    # wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
+    wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
 
 
 def show(grids, name):
@@ -159,10 +160,12 @@ def show(grids, name):
         
         axs[i, 0].imshow(np.asarray(grid))
         axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
-    fig.savefig(f"{name}.png", format="png", bbox_inches="tight")
-    # wandb.log({"outputs" : wandb.Image(fig)}) 
+    
+    
+    fig.savefig(f"results/{name}.png", format="png", bbox_inches="tight")
+    wandb.log({"outputs" : wandb.Image(fig)}) 
 
-def visualize_results(model, test_loader, device):
+def visualize_results(model, test_loader, device, epoch):
     test_input, test_target = next(iter(test_loader))
     
     test_input = test_input.to(device)
@@ -181,7 +184,7 @@ def visualize_results(model, test_loader, device):
         grid_out = make_grid(predictions[idx], 20)
         visual_grid.append(grid_gt)
         visual_grid.append(grid_out)
-    show(visual_grid, "grid")
+    show(visual_grid, f"grid_{epoch}")
 
 
 def load_cfg(name):

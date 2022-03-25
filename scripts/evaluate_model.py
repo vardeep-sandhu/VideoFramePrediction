@@ -54,7 +54,7 @@ def save_tensors(stats, save_dir ):
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     for matrix in stats:
-        torch.save(stats[matrix], f'{matrix}.pt')
+        torch.save(stats[matrix], f'{os.path.join(save_dir, matrix)}.pt')
 
 def print_results(stats):
     print("*" * 50)
@@ -66,7 +66,7 @@ def print_results(stats):
         print("*" * 50)
 
 
-def main():
+def eval_model_main():
     args = parse_commandline()
     device = "cuda"
     model_path = args.model_path
@@ -74,14 +74,16 @@ def main():
     model, _, _ = loading_model(model, model_path)
     model = model.to(device)
 
-    transform = transforms.Compose([transforms.ToTensor(),
-                    transforms.Resize((64, 64)),
-                    ])
 
     if args.test_dataset == "moving_mnist":
+        transform = transforms.Compose([transforms.ToTensor(),
+                transforms.Resize((64, 64)),
+                ])
+
         test_set = MovingMNIST_test(root='data/mnist', train=False, download=True, transform=transform, target_transform=transform, split=10_000)
     
     if args.test_dataset == "kth":
+        transform = transforms.Compose([transforms.Resize((64, 64))])
         test_set = KTH("data/kth", transform=transform, download=False, train=False)
     print(len(test_set))
 
@@ -108,10 +110,11 @@ def main():
             psnr[b_inx, :] = psnr_seq
             lpips[b_inx, :] = lpips_seq
             ssim[b_inx, :] = ssim_seq
+
         stats = {"MAE": mae, "MSE": mse,"PSNR": psnr,"LPIPS": lpips,"SSIM": ssim}
-        save_tensors(stats)
+        save_tensors(stats, args.save_path)
         print_results(stats)
 
 
 if __name__ == "__main__":
-    main()
+    eval_model_main()
