@@ -2,13 +2,14 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from lr_warmup import ReduceLROnPlateauWithWarmup
 
 from model import Model
 import utils
 import wandb
 import argparse
 from attrdict import AttrDict
+from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup
 
 def parse_commandline():
     parser = argparse.ArgumentParser()
@@ -17,18 +18,21 @@ def parse_commandline():
     cfg = AttrDict(utils.load_cfg(args.cfg_name))
     return args, cfg
 
+warmup_epochs = 3
+warmup_initial_lr = 0.004
+
 if __name__ == "__main__":
-    
+
     args, cfg = parse_commandline()
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     transform = transforms.Compose([transforms.ToTensor(),
                         transforms.Resize((64, 64)),
                        ])
 
     train_set, test_set = utils.load_dataset(cfg)
-    
+
     batch_size = cfg.batch_size
 
     train_loader = DataLoader(
@@ -44,7 +48,7 @@ if __name__ == "__main__":
 
 # W and B for logging grads
     wandb.init()
-    
+
     model = Model()
     mdoel = model.to(device)
     wandb.watch(model, log_freq=cfg.log_freq)
@@ -52,9 +56,9 @@ if __name__ == "__main__":
     print("Model Loaded")
     criterion = nn.MSELoss()
     # criterion = nn.L1Loss()
-    
+
     optimizer = torch.optim.Adam(model.parameters(), lr= cfg.learning_rate)
-    scheduler = ReduceLROnPlateau(optimizer, factor=cfg.factor, patience=cfg.patience)
+    scheduler = ReduceLROnPlateauWithWarmup(optimizer,0,cfg.learning_rate,10)
 
     # mean_loss, loss_list = utils.train_epoch(model, train_loader, optimizer, criterion, 0, device)
 
