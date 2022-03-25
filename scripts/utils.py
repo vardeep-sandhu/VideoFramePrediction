@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar 25 17:54:54 2022
+
+@author: aysha
+"""
+
 import os
 import torch 
 import numpy as np
@@ -8,6 +15,7 @@ import matplotlib.pyplot as plt
 import wandb
 import yaml
 import torchvision.transforms.functional as F
+from piqa import SSIM
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
@@ -26,8 +34,10 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         predictions = predictions.to(device)
 
         full_seq = torch.cat((seq, target), dim=1)
-
-        loss = criterion(predictions, full_seq)
+        
+        ssim_loss = ssim_eval(predictions,full_seq,device)
+        
+        loss = criterion(predictions, full_seq) + 0.001 * ssim_loss #Lambda=0.01
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
@@ -115,6 +125,13 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
+
+def ssim_eval(predictions,target,device):
+    ssim = SSIM().to(device)
+    pred_new=predictions.repeat(1,1,3,1,1).flatten(0,1)
+    target_new=target.repeat(1,1,3,1,1).flatten(0,1)
+    ssim_loss = 1 - ssim(pred_new, target_new)
+    return ssim_loss
 
 
 def saving_model(model, optimizer, epoch):
