@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 25 17:54:54 2022
-
-@author: aysha
-"""
-
 import os
 import torch 
 import numpy as np
@@ -17,7 +10,7 @@ import yaml
 import torchvision.transforms.functional as F
 from piqa import SSIM
 
-def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
+def train_epoch(model, train_loader, optimizer, criterion, epoch, device, add_ssim):
     """ Training a model for one epoch """
     
     loss_list = []
@@ -27,7 +20,6 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         seq = seq.type(torch.FloatTensor).to(device)
         target = target.type(torch.FloatTensor).to(device)
         
-        # Clear gradients w.r.t. parameters
         optimizer.zero_grad()
         
         predictions = model(seq)
@@ -35,15 +27,15 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
 
         full_seq = torch.cat((seq, target), dim=1)
         
-        ssim_loss = ssim_eval(predictions,full_seq,device)
-        
-        loss = criterion(predictions, full_seq) + 0.001 * ssim_loss #Lambda=0.01
+        if add_ssim:
+            ssim_loss = ssim_eval(predictions,full_seq,device)
+            loss = criterion(predictions, full_seq) + 0.001 * ssim_loss #Lambda=0.01
+        else:
+            loss = criterion(predictions, full_seq)
         loss_list.append(loss.item())
 
-        # Getting gradients w.r.t. parameters
         loss.backward()
          
-        # Updating parameters
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
@@ -56,7 +48,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
 
 
 @torch.no_grad()
-def eval_model(model, eval_loader, criterion, device, epoch):
+def eval_model(model, eval_loader, criterion, device, epoch, result_path):
     """ Evaluating the model for either validation or test """
     loss_list = []
     pbar = tqdm(enumerate(eval_loader), total=len(eval_loader))
@@ -74,13 +66,13 @@ def eval_model(model, eval_loader, criterion, device, epoch):
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
         
     mean_loss = np.mean(loss_list)
-    visualize_results(model, eval_loader, device, epoch)
+    visualize_results(model, eval_loader, device, epoch, result_path)
     
     return mean_loss
 
 
 def train_model(model, optimizer, scheduler, criterion, train_loader,\
-                valid_loader, num_epochs, device):
+                valid_loader, num_epochs, device, args, config):
     """ Training a model for a given number of epochs"""
     
     train_loss = []
@@ -97,16 +89,15 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         model.eval()  # important for dropout and batch norms
         loss = eval_model(
                     model=model, eval_loader=valid_loader,
-                    criterion=criterion, device=device, epoch=epoch
-            )
+                    criterion=criterion, device=device, epoch=epoch,
+                    result_path=config.result_path)
         val_loss.append(loss)
 
         # training epoch
         model.train()  # important for dropout and batch norms
         mean_loss, cur_loss_iters = train_epoch(
                 model=model, train_loader=train_loader, optimizer=optimizer,
-                criterion=criterion, epoch=epoch, device=device
-            )
+                criterion=criterion, epoch=epoch, device=device, add_ssim=args.add_ssim)
 
         train_loss.append(mean_loss)
         loss_iters = loss_iters + cur_loss_iters
@@ -119,14 +110,16 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
         print(f"    Train loss: {round(mean_loss, 5)}")
         print(f"    Valid loss: {round(loss, 5)}")
         print("\n")
-        saving_model(model, optimizer, epoch)
+
+        if (epoch+1) % config.save_freq == 0 or epoch == 0:
+            saving_model(model, optimizer, epoch, config.save_path)
 
         wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
     
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
 
-def ssim_eval(predictions,target,device):
+def ssim_eval(predictions, target, device):
     ssim = SSIM().to(device)
     pred_new=predictions.repeat(1,1,3,1,1).flatten(0,1)
     target_new=target.repeat(1,1,3,1,1).flatten(0,1)
@@ -134,10 +127,10 @@ def ssim_eval(predictions,target,device):
     return ssim_loss
 
 
-def saving_model(model, optimizer, epoch):
-    if not os.path.exists("models"):
-        os.makedirs("models")
-    save_path = f"models/model_{epoch+1}.pth"
+def saving_model(model, optimizer, epoch, save_path):
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    save_path = f"{save_path}/model_{epoch+1}.pth"
     torch.save({
         'epoch' : epoch,
         'model_state_dict' : model.state_dict(),
@@ -166,7 +159,7 @@ def save_results(grid, name):
     wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
 
 
-def show(grids, name):
+def show(grids, name, result_path):
 
     fig, axs = plt.subplots(nrows=len(grids), squeeze=False)
     fig.set_size_inches(25,8)
@@ -178,11 +171,12 @@ def show(grids, name):
         axs[i, 0].imshow(np.asarray(grid))
         axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     
-    
-    fig.savefig(f"results/{name}.png", format="png", bbox_inches="tight")
+    if not os.path.isdir(result_path):
+        os.makedirs(result_path)
+    fig.savefig(f"{result_path}/{name}.png", format="png", bbox_inches="tight")
     wandb.log({"outputs" : wandb.Image(fig)}) 
 
-def visualize_results(model, test_loader, device, epoch):
+def visualize_results(model, test_loader, device, epoch, result_path):
     test_input, test_target = next(iter(test_loader))
     
     test_input = test_input.to(device)
@@ -201,7 +195,7 @@ def visualize_results(model, test_loader, device, epoch):
         grid_out = make_grid(predictions[idx], 20)
         visual_grid.append(grid_gt)
         visual_grid.append(grid_out)
-    show(visual_grid, f"grid_{epoch}")
+    show(visual_grid, f"grid_{epoch}", result_path)
 
 
 def load_cfg(name):

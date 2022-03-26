@@ -3,6 +3,8 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from lr_warmup import ReduceLROnPlateauWithWarmup
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
 
 from model import Model
 import utils
@@ -14,22 +16,19 @@ from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup
 def parse_commandline():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg_name', '-c', type=str)
+    parser.add_argument('--add_ssim', type=bool)
+    parser.add_argument('--lr_warmup', type=bool)
+    parser.add_argument('--criterion', type=str)
+    
     args = parser.parse_args()
     cfg = AttrDict(utils.load_cfg(args.cfg_name))
     return args, cfg
-
-warmup_epochs = 3
-warmup_initial_lr = 0.004
 
 if __name__ == "__main__":
 
     args, cfg = parse_commandline()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    transform = transforms.Compose([transforms.ToTensor(),
-                        transforms.Resize((64, 64)),
-                       ])
 
     train_set, test_set = utils.load_dataset(cfg)
 
@@ -38,12 +37,14 @@ if __name__ == "__main__":
     train_loader = DataLoader(
                     dataset=train_set,
                     batch_size=batch_size,
-                    shuffle=True)
+                    shuffle=True,
+                    num_workers=4)
 
     test_loader = DataLoader(
                     dataset=test_set,
                     batch_size=batch_size,
-                    shuffle=True)
+                    shuffle=False,
+                    num_workers=4)
     print("Data loaders ready")
 
 # W and B for logging grads
@@ -54,13 +55,19 @@ if __name__ == "__main__":
     wandb.watch(model, log_freq=cfg.log_freq)
 
     print("Model Loaded")
-    criterion = nn.MSELoss()
-    # criterion = nn.L1Loss()
+
+    if args.criterion == "mse":
+        criterion = nn.MSELoss()
+    elif args.criterion == "mae":
+        criterion = nn.L1Loss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr= cfg.learning_rate)
-    scheduler = ReduceLROnPlateauWithWarmup(optimizer,0,cfg.learning_rate,10)
+    criterion = criterion.to(device)
 
-    # mean_loss, loss_list = utils.train_epoch(model, train_loader, optimizer, criterion, 0, device)
+    if args.lr_warmup:
+        scheduler = ReduceLROnPlateauWithWarmup(optimizer, cfg.warmup_init_lr, cfg.learning_rate, cfg.warmup_epochs)
+    else:
+        scheduler = ReduceLROnPlateau(optimizer, factor=cfg.factor, patience=cfg.patience)
 
     train_loss, test_loss, loss_iter, epochs = utils.train_model(model, optimizer, scheduler, criterion,\
-                                                                train_loader, test_loader, cfg.epochs, device)
+                                                                train_loader, test_loader, cfg.epochs, device, args, cfg)

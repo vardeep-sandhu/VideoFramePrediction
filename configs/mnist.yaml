@@ -1,18 +1,29 @@
 dataset: smmnist
 
-dataset_path: data
+dataset_path: data/mnist
 
+# General Hyperparams
 epochs: 50
+
+batch_size: 32
 
 learning_rate: 0.001
 
-n_past: 10
-n_future: 10
-image_width: 64
-n_eval: 20
-num_digits: 2
+# LR warmup
+warmup_init_lr: 0
 
-batch_size: 32
+warmup_epochs: 10
+
+# Seq information
+n_past: 10
+
+n_future: 10
+
+image_width: 64
+
+n_eval: 20
+
+num_digits: 2
 
 # Scheduler
 factor: 0.1
@@ -21,3 +32,10 @@ patience: 10
 
 # Logging
 log_freq: 100
+
+save_freq: 5
+
+# Paths
+save_path: "models/mnist"
+
+result_path: "results/mnist"

@@ -77,7 +77,7 @@ def eval_model_main():
 
     if args.test_dataset == "moving_mnist":
         transform = transforms.Compose([transforms.ToTensor(),
-                transforms.Resize((64, 64)),
+                    transforms.Resize((64, 64)),
                 ])
 
         test_set = MovingMNIST_test(root='data/mnist', train=False, download=True, transform=transform, target_transform=transform, split=10_000)

@@ -1,7 +1,7 @@
 import math
 import torch
 
-from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class ReduceLROnPlateauWithWarmup(ReduceLROnPlateau):
     """ReduceLROnPlateau but with a linear warm-up period.
