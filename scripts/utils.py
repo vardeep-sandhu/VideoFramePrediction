@@ -3,8 +3,13 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from torchvision.utils import make_grid
+import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import wandb
+import yaml
+import torchvision.transforms.functional as F
+from piqa import SSIM
+from ignite.handlers.param_scheduler import ConcatScheduler
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     """ Training a model for one epoch """
@@ -12,7 +17,7 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
     loss_list = []
     progress_bar = tqdm(enumerate(train_loader), total=len(train_loader))
     for idx, (seq, target) in progress_bar:
-
+        
         seq = seq.type(torch.FloatTensor).to(device)
         target = target.type(torch.FloatTensor).to(device)
         
@@ -23,9 +28,10 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         predictions = predictions.to(device)
 
         full_seq = torch.cat((seq, target), dim=1)
-
-        loss = criterion(predictions[:, :, :, :, :], full_seq[:, 1:, :, :, :])
         
+        ssim_loss = ssim_eval(predictions,full_seq,device)
+        
+        loss = criterion(predictions, full_seq) + 0.001 * ssim_loss #Lambda=0.01
         loss_list.append(loss.item())
 
         # Getting gradients w.r.t. parameters
@@ -35,16 +41,16 @@ def train_epoch(model, train_loader, optimizer, criterion, epoch, device):
         optimizer.step()
         
         progress_bar.set_description(f"Epoch {epoch+1} Iter {idx+1}: loss {loss.item():.5f}. ")
-        if idx % 10 == 0:
+        if idx % 50 == 0:
             wandb.log({"loss": loss})
-
+        
     mean_loss = np.mean(loss_list)
 
     return mean_loss, loss_list
 
 
 @torch.no_grad()
-def eval_model(model, eval_loader, criterion, device):
+def eval_model(model, eval_loader, criterion, device, epoch):
     """ Evaluating the model for either validation or test """
     loss_list = []
     pbar = tqdm(enumerate(eval_loader), total=len(eval_loader))
@@ -56,12 +62,14 @@ def eval_model(model, eval_loader, criterion, device):
         predictions = model(seq)
         predictions = predictions.to(device)
                 
-        loss = criterion(predictions[:, 9:, :, :, :], target)
+        loss = criterion(predictions[:, 10:, :, :, :], target)
         loss_list.append(loss.item())
             
         pbar.set_description(f"Test loss: loss {loss.item():.2f}")
+        
     mean_loss = np.mean(loss_list)
-    visualize_results(model, eval_loader, device)
+    visualize_results(model, eval_loader, device, epoch)
+    
     return mean_loss
 
 
@@ -74,36 +82,53 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
     loss_iters = []
     epochs = []
     
+    torch.onnx.export(model, torch.randn(1, 10, 1, 64, 64, device="cuda"), "model.onnx", opset_version=11)
+    wandb.save("model.onnx")
+
     for epoch in range(num_epochs):
-           
+                 
         # validation epoch
         model.eval()  # important for dropout and batch norms
         loss = eval_model(
                     model=model, eval_loader=valid_loader,
-                    criterion=criterion, device=device
+                    criterion=criterion, device=device, epoch=epoch
             )
         val_loss.append(loss)
-        epochs.append(epoch+1)
-        
+
         # training epoch
         model.train()  # important for dropout and batch norms
         mean_loss, cur_loss_iters = train_epoch(
                 model=model, train_loader=train_loader, optimizer=optimizer,
                 criterion=criterion, epoch=epoch, device=device
             )
-        scheduler.step()
+
         train_loss.append(mean_loss)
         loss_iters = loss_iters + cur_loss_iters
+  
+        epochs.append(epoch+1)
         
+        if isinstance(scheduler,ConcatScheduler):
+          scheduler(None)
+        else:
+          scheduler.step(loss)
 
         print(f"Epoch {epoch+1}/{num_epochs}")
         print(f"    Train loss: {round(mean_loss, 5)}")
         print(f"    Valid loss: {round(loss, 5)}")
         print("\n")
         saving_model(model, optimizer, epoch)
-        
+
+        wandb.log({"train_epoch_loss": mean_loss, "val_loss": loss})
+    
     print(f"Training completed")
     return train_loss, val_loss, loss_iters, epochs
+
+def ssim_eval(predictions,target,device):
+    ssim = SSIM().to(device)
+    pred_new=predictions.repeat(1,1,3,1,1).flatten(0,1)
+    target_new=target.repeat(1,1,3,1,1).flatten(0,1)
+    ssim_loss = 1 - ssim(pred_new, target_new)
+    return ssim_loss
 
 
 def saving_model(model, optimizer, epoch):
@@ -127,6 +152,7 @@ def loading_model(model, path):
     # stats = checkpoint['stats']
     return model, optimizer, epoch
 
+
 def save_results(grid, name):
     fix, axs = plt.subplots()
     fix.set_size_inches(25,8)
@@ -134,8 +160,26 @@ def save_results(grid, name):
     axs.imshow(grid.cpu().numpy().transpose(1,2,0))
     axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
     fix.savefig(f"{name}.png", format="png", bbox_inches="tight")
+    wandb.log({"outputs" : wandb.Image(grid.cpu())}) 
 
-def visualize_results(model, test_loader, device):
+
+def show(grids, name):
+
+    fig, axs = plt.subplots(nrows=len(grids), squeeze=False)
+    fig.set_size_inches(25,8)
+
+    for i, grid in enumerate(grids):
+        grid = grid.detach()
+        grid = F.to_pil_image(grid)
+        
+        axs[i, 0].imshow(np.asarray(grid))
+        axs[i, 0].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    
+    
+    fig.savefig(f"results/{name}.png", format="png", bbox_inches="tight")
+    wandb.log({"outputs" : wandb.Image(fig)}) 
+
+def visualize_results(model, test_loader, device, epoch):
     test_input, test_target = next(iter(test_loader))
     
     test_input = test_input.to(device)
@@ -146,9 +190,54 @@ def visualize_results(model, test_loader, device):
     model.eval() 
     with torch.no_grad():
         predictions = model(test_input)
+        predictions = predictions.to(device)
     
-    grid_gt = make_grid(full_gt_seq[0])
-    save_results(grid_gt, "gt")
+    visual_grid = []
+    for idx in range(0, 5):
+        grid_gt = make_grid(full_gt_seq[idx], 20)
+        grid_out = make_grid(predictions[idx], 20)
+        visual_grid.append(grid_gt)
+        visual_grid.append(grid_out)
+    show(visual_grid, f"grid_{epoch}")
 
-    grid_out = make_grid(predictions[0])
-    save_results(grid_out, "output")
+
+def load_cfg(name):
+    path = os.path.join("configs", name)
+    with open(path, 'r') as file:
+        yaml_data = yaml.safe_load(file)
+    return yaml_data
+
+
+def load_dataset(opt):
+    if opt.dataset == 'smmnist':
+        from dataset.moving_mnist import MovingMNIST
+        train_data = MovingMNIST(
+                train=True,
+                data_root=opt.dataset_path,
+                seq_len=opt.n_past+opt.n_future,
+                image_size=opt.image_width,
+                deterministic=False,
+                num_digits=opt.num_digits)
+        test_data = MovingMNIST(
+                train=False,
+                data_root=opt.dataset_path,
+                seq_len=opt.n_eval,
+                image_size=opt.image_width,
+                deterministic=False,
+                num_digits=opt.num_digits)
+    elif opt.dataset == 'kth':
+        from dataset.kth import KTH 
+        transform = transforms.Compose([transforms.Resize((64, 64))])
+        train_data = KTH(
+            directory=opt.dataset_path,
+            transform=transform,
+            download=False,
+            train=True)
+
+        test_data = KTH(
+            directory=opt.dataset_path,
+            transform=transform,
+            download=False,
+            train=False)
+
+    return train_data, test_data
