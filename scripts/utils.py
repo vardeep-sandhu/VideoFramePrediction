@@ -9,6 +9,7 @@ import wandb
 import yaml
 import torchvision.transforms.functional as F
 from piqa import SSIM
+from ignite.handlers.param_scheduler import ConcatScheduler
 
 def train_epoch(model, train_loader, optimizer, criterion, epoch, device, add_ssim):
     """ Training a model for one epoch """
@@ -104,7 +105,10 @@ def train_model(model, optimizer, scheduler, criterion, train_loader,\
   
         epochs.append(epoch+1)
         
-        scheduler.step(loss)
+        if isinstance(scheduler,ConcatScheduler):
+          scheduler(None)
+        else:
+          scheduler.step(loss)
 
         print(f"Epoch {epoch+1}/{num_epochs}")
         print(f"    Train loss: {round(mean_loss, 5)}")
@@ -238,3 +242,4 @@ def load_dataset(opt):
             train=False)
 
     return train_data, test_data
+

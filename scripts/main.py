@@ -19,6 +19,7 @@ def parse_commandline():
     parser.add_argument('--add_ssim', type=bool)
     parser.add_argument('--lr_warmup', type=bool)
     parser.add_argument('--criterion', type=str)
+    parser.add_argument('--scheduler','-s', type=str)
     
     args = parser.parse_args()
     cfg = AttrDict(utils.load_cfg(args.cfg_name))
@@ -63,11 +64,25 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(model.parameters(), lr= cfg.learning_rate)
     criterion = criterion.to(device)
+    if args.scheduler == "plateau":
 
-    if args.lr_warmup:
+      if args.lr_warmup:
         scheduler = ReduceLROnPlateauWithWarmup(optimizer, cfg.warmup_init_lr, cfg.learning_rate, cfg.warmup_epochs)
-    else:
+      else:
         scheduler = ReduceLROnPlateau(optimizer, factor=cfg.factor, patience=cfg.patience)
+
+    elif args.scheduler == "exponential":
+      
+      if args.lr_warmup:
+        exp_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.7)
+        scheduler = create_lr_scheduler_with_warmup(exp_scheduler,
+                                            warmup_start_value=cfg.warmup_init_lr,
+                                            warmup_end_value=cfg.learning_rate,
+                                            warmup_duration=cfg.warmup_epochs)
+      else:
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.7)
+
 
     train_loss, test_loss, loss_iter, epochs = utils.train_model(model, optimizer, scheduler, criterion,\
                                                                 train_loader, test_loader, cfg.epochs, device, args, cfg)
+
