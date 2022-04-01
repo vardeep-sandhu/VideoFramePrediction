@@ -96,7 +96,7 @@ This generates folders in the `results` directory for every log frequency steps.
 The architecture of the model is shown below. First, all 10 gt frames are inputted to the encoder which makes feature embeddings at levels. Then, three different ConvLSTM takes these feature embeddings at different levels and predicts the feature embeddings for the next 10 frames like a sequence-to-sequence manner. Then these predicted embeddings from differnt levels are passed through the decoder, which gives us the 10 predicted frames. 
 
 
-![Diagram](./docs/archi.png)
+![Diagram](./docs/architecture.PNG)
 
 <!-- RESULTS -->
 
