@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://github.com/here-to-learn0/Video_frame_prediction">
-    <img src="docs/archi.png" alt="Logo" width="300" height="175">
+    <img src="docs/architecture.png" alt="Logo" width="300" height="175">
   </a>
   <h3 align="center">Video Frame Prediction</h3>
   <p align="center">
@@ -128,6 +128,11 @@ Project Link: [https://github.com/here-to-learn0/Video_frame_prediction](https:/
 
 
 > https://github.com/edenton/svg
+> https://github.com/vkhoi/KTH-Action-Recognition
+> https://github.com/edenton/svg
+> https://github.com/CeeBeeTree/KTH-Action-Recognition
+> https://github.com/pytorch/vision/blob/7947fc8fb38b1d3a2aca03f22a2e6a3caa63f2a0/torchvision/models/resnet.py#L37
+> https://holmdk.github.io/2020/04/02/video_prediction.html
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
