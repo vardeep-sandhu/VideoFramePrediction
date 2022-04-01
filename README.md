@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://github.com/here-to-learn0/Video_frame_prediction">
-    <img src="docs/architecture.PNG" alt="Logo" width="300" height="175">
+    <img src="docs/architecture.PNG" alt="Logo" width="500" height="275">
   </a>
   <h3 align="center">Video Frame Prediction</h3>
   <p align="center">
