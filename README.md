@@ -128,8 +128,7 @@ Project Link: [https://github.com/here-to-learn0/Video_frame_prediction](https:/
 
 
 > https://github.com/edenton/svg
-> https://github.com/vkhoi/KTH-Action-Recognition
-> https://github.com/edenton/svg
+> https://github.com/vkhoi/KTH-Action-Recognition 
 > https://github.com/CeeBeeTree/KTH-Action-Recognition
 > https://github.com/pytorch/vision/blob/7947fc8fb38b1d3a2aca03f22a2e6a3caa63f2a0/torchvision/models/resnet.py#L37
 > https://holmdk.github.io/2020/04/02/video_prediction.html
