@@ -243,3 +243,60 @@ def load_dataset(opt):
 
     return train_data, test_data
 
+
+##Visualise functions for Notebooks
+def showfornb(grid, seq, evaluation):
+    fix, axs = plt.subplots()
+    fix.set_size_inches(25,10)
+
+    axs.imshow(grid.cpu().numpy().transpose(1,2,0))
+    axs.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    
+    if seq=='gt':
+        if evaluation==False:
+            axs.set_title('Input Sequence')
+        else:
+            axs.set_title('Target sequence')
+    else:
+        if evaluation==False:
+            axs.set_title('Target sequence')
+        else:
+            axs.set_title('Predicted sequence')
+
+def visualise_sample(sample, model, device, evaluation):    
+    if evaluation==False:
+        idx = torch.randint(len(sample), size=(1,)).item()
+        seq, target = sample[idx]
+        if(type(seq)!=torch.Tensor):
+            seq=torch.from_numpy(seq)
+            target=torch.from_numpy(target)
+            
+        seq = seq.to(device)
+        target = target.to(device)
+        
+        grid_gt = make_grid(seq,seq.shape[0])
+        
+        showfornb(grid_gt, "gt",evaluation)
+        
+        grid_out = make_grid(target,target.shape[0])
+        
+        showfornb(grid_out,"output",evaluation)
+        
+    else:
+        seq, target = sample
+        
+        seq = seq.to(device)
+        target = target.to(device)
+        
+        model.eval() 
+        with torch.no_grad():
+            predictions = model(seq)
+            predictions = predictions.to(device)
+            
+        grid_gt = make_grid(target[0], target.shape[0])
+        showfornb(grid_gt, "gt", evaluation)
+    
+        grid_out = make_grid(predictions[:,10:,:,:,:][0], predictions[:,10:,:,:,:].shape[0])
+        
+        showfornb(grid_out, "output", evaluation)
+
