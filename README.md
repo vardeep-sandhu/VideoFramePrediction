@@ -39,9 +39,7 @@ This project was built with
 * The environment used for developing this project is available at [environment.yml](environment.yml).
 
 
-## TODO
 
-- [ ] Add flag to specify after how many epochs should a model be stored
 
 
 <!-- GETTING STARTED -->
