@@ -83,12 +83,28 @@ data/
 To train the model specify the dataset config file to use with the `-c` flag. The possible config files to choose from are placed in the ```configs``` directory
 
 ```sh
-python scripts/main.py -c dataset_config_file.yaml 
+python scripts/main.py  -c dataset_config.yaml --lr_warmup True --add_ssim True --criterion mae -s scheduler
 ```
+-c corresponds to the config file , the two config files kt.yaml and mnist.yaml which are present in the configs folder.
+--lr_warmup - this flag is set to True if LR warmup is to be applied to the schedulers that are used else it is set to False.
+--add_ssim - this flag is set to True if SSIM is to be used as a combined loss function for training along with MSE or MAE else it is set to False.
+--criterion - this corresponds to the loss function criterion which is used for training, it has two values 'mae' or 'mse'.
+-s corresponds to the type of scheduler that is used,its values are 'exponential' or 'plateau' for the two schedulers used are Exponential LR and ReduceLROnPlateau 
 
 This trains the frame prediction model and saves model after every 5th epoch in the `model` directory.
 
 This generates folders in the `results` directory for every log frequency steps. The folders contains the ground truth and predicted frames for the test dataset. These outputs along with loss are written to Weights and Biases as well.
+
+Once training is completed and the models are saved, the evaluate_model.py file can be used to calculate the following metrics for the model :
+MSE,MAE,PSNR,SSIM and LPIPS.
+
+This evaluation can be run using the following command:
+python scripts/evaluate_model.py -d moving_mnist -mp model_path -s tensor_saving_path
+
+-d corresponds to the datalloader used it ,the values are 'moving_mnist' and 'kth' for the Moving Mnist and KTH Action Dataset.
+-mp corresponds to the path along with the model name and type (example: models/mnist/model_50.pth) where the model is stored.
+-s corresponds to the path where the tensors for the metrics are stored (example: results_eval/mnist)
+
 
 
 ## Model overview
