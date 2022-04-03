@@ -78,7 +78,7 @@ data/
 
 ### Instructions to run
 
-To train the model specify the dataset config file to use with the `-c` flag. The possible config files to choose from are placed in the ```configs``` directory
+To train and evaluate the model use the commands listed below:
 
 ```sh
 python scripts/main.py  -c dataset_config.yaml --lr_warmup True --add_ssim True --criterion loss_function -s scheduler
