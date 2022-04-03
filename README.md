@@ -120,15 +120,15 @@ The architecture of the model is shown below. First, all 10 gt frames are inputt
 
 Detailed results and inferences are available in report [here](./docs/report.pdf).
 
-We evaluate the performance of the model on MovingMNIST and KTH dataset. The quantitative results of our model performance for both the datasets is given below.
+We evaluate the performance of the best model(trained with SSIM and MSE using ReduceLROnPlateau Schedular with LR warmup) on MovingMNIST and KTH dataset. The quantitative results of our model performance for both the datasets is given below.
 
-|Dataset  |  MSE | MAE | PSNR  | LPIPS   |  SSIm  |
+|Dataset  |  MSE | MAE | PSNR  | SSIM   |  LPIPS  |
 |---------|---------|--------|---------|--------|-------|
-|MovingMNIST |  |  |    |    |       
-|KTH        | 0.035 |  0.156  |  15.240 |  0.241   | 0.227        
+|MovingMNIST | 0.028 |0.061  | 15.806   | 0.650   |   0.194     
+|KTH        | 0.043 | 0.179  |  14.373 |  0.77   | 0.239        
 
 
-
+       
 <!-- CONTACT -->
 
 ## Contact
