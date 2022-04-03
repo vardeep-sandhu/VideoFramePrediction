@@ -97,7 +97,9 @@ Once training is completed and the models are saved, the evaluate_model.py file 
 MSE,MAE,PSNR,SSIM and LPIPS.
 
 This evaluation can be run using the following command:
+```sh 
 python scripts/evaluate_model.py -d moving_mnist -mp model_path -s tensor_saving_path
+```
 
 -d corresponds to the datalloader used it ,the values are 'moving_mnist' and 'kth' for the Moving Mnist and KTH Action Dataset.
 -mp corresponds to the path along with the model name and type (example: models/mnist/model_50.pth) where the model is stored.
