@@ -98,7 +98,7 @@ This trains the frame prediction model and saves model after every 5th epoch in 
 This generates folders in the `results` directory for every log frequency steps. The folders contains the ground truth and predicted frames for the test dataset. These outputs along with loss are written to Weights and Biases as well.
 
 Once training is completed and the models are saved, the evaluate_model.py file can be used to calculate the following metrics for the model :
-MSE,MAE,PSNR,SSIM and LPIPS.
+MSE, MAE, PSNR, SSIM and LPIPS.
 
 This evaluation can be run using the following command:
 ```sh 
