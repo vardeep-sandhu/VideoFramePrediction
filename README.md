@@ -61,7 +61,7 @@ Create a new conda environment and install all the libraries by running the foll
 conda env create -f environment.yml
 ```
 
-The datasets used in this project are Moving MNIST and KTH. Moving OMNIST will will be automatically downloaded and setup in `data` directory during execution. However, KTH video sequence files have to be downloaded and placed in the data directly as given below.
+The datasets used in this project are Moving MNIST and KTH. Moving MNIST will will be automatically downloaded and setup in `data` directory during execution. However, KTH video sequence files have to be downloaded and placed in the data directly as given below.
 
 ```
 data/
@@ -83,10 +83,14 @@ To train and evaluate the model use the commands listed below:
 ```sh
 python scripts/main.py  -c dataset_config.yaml --lr_warmup True --add_ssim True --criterion loss_function -s scheduler
 ```
--c corresponds to the config file , the two config files kt.yaml and mnist.yaml which are present in the configs folder.
+-c corresponds to the config file , the two config files kth.yaml and mnist.yaml which are present in the configs folder.
+
 --lr_warmup - this flag is set to True if LR warmup is to be applied to the schedulers that are used else it is set to False.
+
 --add_ssim - this flag is set to True if SSIM is to be used as a combined loss function for training along with MSE or MAE else it is set to False.
+
 --criterion - this corresponds to the loss function criterion which is used for training, it has two values 'mae' or 'mse'.
+
 -s corresponds to the type of scheduler that is used,its values are 'exponential' or 'plateau' for the two schedulers used are Exponential LR and ReduceLROnPlateau 
 
 This trains the frame prediction model and saves model after every 5th epoch in the `model` directory.
@@ -101,8 +105,10 @@ This evaluation can be run using the following command:
 python scripts/evaluate_model.py -d moving_mnist -mp model_path -s tensor_saving_path
 ```
 
--d corresponds to the datalloader used it ,the values are 'moving_mnist' and 'kth' for the Moving Mnist and KTH Action Dataset.
+-d corresponds to the dataloader used ,the values are 'moving_mnist' and 'kth' for the Moving Mnist and KTH Action Dataset.
+
 -mp corresponds to the path along with the model name and type (example: models/mnist/model_50.pth) where the model is stored.
+
 -s corresponds to the path where the tensors for the metrics are stored (example: results_eval/mnist)
 
 
@@ -132,6 +138,10 @@ We evaluate the performance of the best model(trained with SSIM and MSE using Re
 <!-- CONTACT -->
 
 ## Contact
+Vardeep Singh Sandhu - s7vasand@uni-bonn.de
+Aysha Athar Siddiqui - s6aysidd@uni-bonn.de
+Sugan Kanagasenthinathan - s6sukana@uni-bonn.de
+
 
 
 Project Link: [https://github.com/here-to-learn0/Video_frame_prediction](https://github.com/here-to-learn0/Video_frame_prediction)
