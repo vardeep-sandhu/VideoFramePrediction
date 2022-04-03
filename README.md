@@ -83,7 +83,7 @@ data/
 To train the model specify the dataset config file to use with the `-c` flag. The possible config files to choose from are placed in the ```configs``` directory
 
 ```sh
-python scripts/main.py  -c dataset_config.yaml --lr_warmup True --add_ssim True --criterion mae -s scheduler
+python scripts/main.py  -c dataset_config.yaml --lr_warmup True --add_ssim True --criterion loss_function -s scheduler
 ```
 -c corresponds to the config file , the two config files kt.yaml and mnist.yaml which are present in the configs folder.
 --lr_warmup - this flag is set to True if LR warmup is to be applied to the schedulers that are used else it is set to False.
@@ -133,7 +133,6 @@ We evaluate the performance of the model on MovingMNIST and KTH dataset. The qua
 
 ## Contact
 
-Vardeep Singh Sandhu - vardeep.sandhu277@gmail.com
 
 Project Link: [https://github.com/here-to-learn0/Video_frame_prediction](https://github.com/here-to-learn0/Video_frame_prediction)
 
