@@ -46,7 +46,7 @@ This project was built with
 
 ## Getting Started
 
-Clone the repository into a local machine and enter the [src](./) directory using
+Clone the repository into a local machine and enter the Video_frame_prediction directory using
 
 ```shell
 git clone https://github.com/here-to-learn0/Video_frame_prediction
